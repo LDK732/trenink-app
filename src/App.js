@@ -1186,31 +1186,32 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
 
 // ─── SCREEN: KLIENTI ─────────────────────────────────────────────────────────
 function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
-  const [clients, setClients] = useState(SEED_CLIENTS);
-  const [assigningClient, setAssigningClient] = useState(null); // client object
-  const [viewingClient,   setViewingClient]   = useState(null); // client object
-  const [confirmRemove,   setConfirmRemove]   = useState(null); // client object to remove
+  const [clients, setClients] = useState([]);
+  const [assigningClient, setAssigningClient] = useState(null);
+  const [viewingClient,   setViewingClient]   = useState(null);
+  const [confirmRemove,   setConfirmRemove]   = useState(null);
 
-  function handleRemoveClient(client) {
-    // Remove client and all their data (suggestedPlans keyed by their name)
-    setClients(prev => prev.filter(c => c.id !== client.id));
-    setSuggestedPlans(prev => {
-      const next = { ...prev };
-      // Remove any plans associated with this client
-      Object.keys(next).forEach(key => {
-        if (Array.isArray(next[key])) {
-          next[key] = next[key].filter(p => p.forClient !== client.name);
-        }
-      });
-      return next;
-    });
-    setConfirmRemove(null);
-    setViewingClient(null);
-  }
+  // Načti klienty ze Supabase
+  useEffect(() => {
+    async function loadClients() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("role", "client");
+      if (data) setClients(data);
+    }
+    loadClients();
+  }, []);
+
+  // Počet nových klientů tento měsíc
+  const thisMonth = new Date().getMonth();
+  const thisYear = new Date().getFullYear();
+  const newThisMonth = clients.filter(c => {
+    const d = new Date(c.created_at);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  }).length;
 
   function handleAssign(client, tmpl) {
-    // Use "c_self" as key so the plan appears in the current user's Profile → Plány tab
-    // In a real multi-user system this would be per-client ID
     const key = "c_self";
     setSuggestedPlans(prev => {
       const existing = prev[key] || [];
@@ -1222,7 +1223,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
           name: tmpl.name,
           date: new Date().toLocaleDateString("cs-CZ"),
           assignedBy: "Trenér",
-          forClient: client.name,
+          forClient: client.jmeno,
         }]
       };
     });
@@ -1239,12 +1240,12 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
         </div>
         <div style={{ padding:"10px 18px 4px" }}>
           <div style={{ color:T.accent,fontSize:9,letterSpacing:2.5,textTransform:"uppercase",fontWeight:700,opacity:0.8,marginBottom:4 }}>Klient</div>
-          <div style={{ color:T.white,fontWeight:700,fontSize:18,marginBottom:4 }}>{assigningClient.name}</div>
+          <div style={{ color:T.white,fontWeight:700,fontSize:18,marginBottom:4 }}>{assigningClient.jmeno}</div>
           <div style={{ color:T.muted,fontSize:12,marginBottom:16 }}>Vyber plán k přiřazení</div>
         </div>
         <div style={{ padding:"0 12px",display:"flex",flexDirection:"column",gap:10 }}>
           {library.map(tmpl=>{
-            const alreadyAssigned = (suggestedPlans["c_self"]||[]).some(p=>p.templateId===tmpl.id && p.forClient===assigningClient.name);
+            const alreadyAssigned = (suggestedPlans["c_self"]||[]).some(p=>p.templateId===tmpl.id && p.forClient===assigningClient.jmeno);
             const types = [...new Set((tmpl.blocks||[]).map(b=>b.type).filter(Boolean))];
             const typeLabel = types.includes("kombinace")||types.length>1?"Kombinovaný":types.includes("silovy")?"Silový":types.includes("hypertrofie")?"Hypertrofie":"";
             const typeColor = typeLabel==="Silový"?"#FF9500":typeLabel==="Hypertrofie"?"#00CC00":T.accent;
@@ -1273,10 +1274,14 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
 
   return (
     <div style={{ paddingBottom:90 }}>
-      <PageHeader label="Správa" title="Klienti" action={<Btn small>+ Přidat</Btn>}/>
+      <PageHeader label="Správa" title="Klienti"/>
       {/* Stats */}
       <div style={{ display:"flex",gap:8,padding:"14px 18px 4px" }}>
-        {[{label:"Celkem",val:clients.length},{label:"Aktivní",val:clients.filter(c=>c.active).length},{label:"Prům. týden",val:(clients.reduce((a,c)=>a+c.week,0)/clients.length).toFixed(1)}].map((s,i)=>(
+        {[
+          {label:"Celkem",val:clients.length},
+          {label:"Aktivní",val:clients.length},
+          {label:"Noví tento měsíc",val:newThisMonth}
+        ].map((s,i)=>(
           <div key={i} style={{ flex:1,background:`linear-gradient(180deg,#2a2a2a,#232323)`,borderRadius:10,padding:"10px",border:`1px solid rgba(255,255,255,0.08)`,textAlign:"center",boxShadow:T.shadowSm }}>
             <div style={{ color:T.accent,fontWeight:800,fontSize:18 }}>{s.val}</div>
             <div style={{ color:T.muted,fontSize:9,marginTop:2 }}>{s.label}</div>
@@ -1285,34 +1290,25 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
       </div>
       {/* Client list */}
       <div style={{ padding:"10px 12px 0",display:"flex",flexDirection:"column",gap:10 }}>
+        {clients.length===0&&<div style={{ color:T.muted,fontSize:13,textAlign:"center",padding:"20px 0" }}>Zatím žádní klienti.</div>}
         {clients.map(c=>{
-          const clientSuggested = (suggestedPlans["c_self"]||[]).filter(p=>p.forClient===c.name).length;
+          const initials = (c.jmeno||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+          const clientSuggested = (suggestedPlans["c_self"]||[]).filter(p=>p.forClient===c.jmeno).length;
           return (
             <Card key={c.id} style={{ padding:"16px" }}>
               <div style={{ display:"flex",gap:12,alignItems:"center" }}>
-                <div style={{ width:44,height:44,borderRadius:11,flexShrink:0,background:`linear-gradient(135deg,${T.accent}44,${T.bgCard2})`,border:`1.5px solid ${T.accent}44`,display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,fontWeight:800,fontSize:14,boxShadow:`0 2px 8px ${T.accent}22` }}>{c.initials}</div>
+                <div style={{ width:44,height:44,borderRadius:11,flexShrink:0,background:`linear-gradient(135deg,${T.accent}44,${T.bgCard2})`,border:`1.5px solid ${T.accent}44`,display:"flex",alignItems:"center",justifyContent:"center",color:T.accent,fontWeight:800,fontSize:14 }}>{initials}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-                    <div style={{ color:T.white,fontWeight:700,fontSize:15 }}>{c.name}</div>
-                    <span style={{ background:c.active?"rgba(46,159,175,0.15)":"rgba(255,255,255,0.06)",color:c.active?T.accent:T.muted,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20 }}>{c.active?"Aktivní":"Neaktivní"}</span>
+                    <div style={{ color:T.white,fontWeight:700,fontSize:15 }}>{c.jmeno}</div>
+                    <span style={{ background:"rgba(46,159,175,0.15)",color:T.accent,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20 }}>Aktivní</span>
                   </div>
-                  <div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{c.plan}</div>
+                  <div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{c.email}</div>
                   {clientSuggested>0&&<div style={{ color:"#FF9500",fontSize:10,marginTop:2,fontWeight:600 }}>📋 {clientSuggested} navrhovaný plán{clientSuggested>1?"y":""}</div>}
                 </div>
               </div>
-              {/* Progress bar */}
-              <div style={{ marginTop:12 }}>
-                <div style={{ display:"flex",justifyContent:"space-between",marginBottom:5 }}>
-                  <span style={{ color:T.muted,fontSize:10 }}>Pokrok</span>
-                  <span style={{ color:T.accent,fontSize:10,fontWeight:700 }}>Týden {c.week} / 6</span>
-                </div>
-                <div style={{ height:4,background:"rgba(0,0,0,0.4)",borderRadius:2,overflow:"hidden" }}>
-                  <div style={{ height:"100%",width:`${(c.week/6)*100}%`,background:`linear-gradient(90deg,${T.accentDim},${T.accent})`,borderRadius:2,boxShadow:`0 0 8px ${T.accent}66` }}/>
-                </div>
-              </div>
-              {/* Action buttons */}
               <div style={{ display:"flex",gap:8,marginTop:12 }}>
-                <Btn small variant="secondary" style={{ flex:1 }} onClick={()=>setViewingClient(c)}>Zobrazit trénink</Btn>
+                <Btn small variant="secondary" style={{ flex:1 }} onClick={()=>setViewingClient(c)}>Zobrazit profil</Btn>
                 <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setAssigningClient(c)}>Přiřadit plán</Btn>
               </div>
             </Card>
@@ -1320,62 +1316,38 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
         })}
       </div>
 
-      {/* Client workout modal */}
+      {/* Client modal */}
       {viewingClient&&(
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:500,display:"flex",alignItems:"flex-end" }} onClick={()=>{ setViewingClient(null); setConfirmRemove(null); }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:`linear-gradient(180deg,#272727,#212121)`,borderRadius:"16px 16px 0 0",width:"100%",maxHeight:"75vh",overflowY:"auto" }}>
             <div style={{ padding:"14px 18px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid rgba(255,255,255,0.08)` }}>
               <div>
-                <div style={{ color:T.muted,fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase" }}>Trénink klienta</div>
-                <div style={{ color:T.white,fontWeight:700,fontSize:17 }}>{viewingClient.name}</div>
+                <div style={{ color:T.muted,fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase" }}>Profil klienta</div>
+                <div style={{ color:T.white,fontWeight:700,fontSize:17 }}>{viewingClient.jmeno}</div>
               </div>
               <button onClick={()=>{ setViewingClient(null); setConfirmRemove(null); }} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:7,color:T.muted,fontSize:15,cursor:"pointer",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
             </div>
             <div style={{ padding:"14px 18px 28px" }}>
-              <div style={{ display:"flex",justifyContent:"space-between",marginBottom:12 }}>
-                <span style={{ color:T.muted,fontSize:12 }}>Aktivní plán:</span>
-                <span style={{ color:T.white,fontSize:12,fontWeight:600 }}>{viewingClient.plan}</span>
+              <div style={{ display:"flex",justifyContent:"space-between",marginBottom:8 }}>
+                <span style={{ color:T.muted,fontSize:12 }}>Email:</span>
+                <span style={{ color:T.white,fontSize:12,fontWeight:600 }}>{viewingClient.email}</span>
+              </div>
+              <div style={{ display:"flex",justifyContent:"space-between",marginBottom:8 }}>
+                <span style={{ color:T.muted,fontSize:12 }}>Pohlaví:</span>
+                <span style={{ color:T.white,fontSize:12,fontWeight:600 }}>{viewingClient.pohlavi||"—"}</span>
+              </div>
+              <div style={{ display:"flex",justifyContent:"space-between",marginBottom:8 }}>
+                <span style={{ color:T.muted,fontSize:12 }}>Věk:</span>
+                <span style={{ color:T.white,fontSize:12,fontWeight:600 }}>{viewingClient.vek||"—"} let</span>
+              </div>
+              <div style={{ display:"flex",justifyContent:"space-between",marginBottom:8 }}>
+                <span style={{ color:T.muted,fontSize:12 }}>Výška:</span>
+                <span style={{ color:T.white,fontSize:12,fontWeight:600 }}>{viewingClient.vyska||"—"} cm</span>
               </div>
               <div style={{ display:"flex",justifyContent:"space-between",marginBottom:16 }}>
-                <span style={{ color:T.muted,fontSize:12 }}>Aktuální týden:</span>
-                <span style={{ color:T.accent,fontSize:12,fontWeight:700 }}>Týden {viewingClient.week} / 6</span>
+                <span style={{ color:T.muted,fontSize:12 }}>Váha:</span>
+                <span style={{ color:T.white,fontSize:12,fontWeight:600 }}>{viewingClient.vaha||"—"} kg</span>
               </div>
-              {/* Progress */}
-              <div style={{ height:6,background:"rgba(0,0,0,0.4)",borderRadius:3,overflow:"hidden",marginBottom:16 }}>
-                <div style={{ height:"100%",width:`${(viewingClient.week/6)*100}%`,background:`linear-gradient(90deg,${T.accentDim},${T.accent})`,borderRadius:3 }}/>
-              </div>
-              {/* Suggested plans */}
-              {(suggestedPlans["c_self"]||[]).filter(p=>p.forClient===viewingClient.name).length>0&&(
-                <div>
-                  <div style={{ color:T.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8 }}>Navrhované plány</div>
-                  {(suggestedPlans["c_self"]||[]).filter(p=>p.forClient===viewingClient.name).map((sp,i)=>(
-                    <div key={i} style={{ background:"rgba(255,149,0,0.08)",border:`1px solid rgba(255,149,0,0.3)`,borderRadius:9,padding:"10px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-                      <div>
-                        <div style={{ color:T.white,fontSize:13,fontWeight:600 }}>{sp.name}</div>
-                        <div style={{ color:T.muted,fontSize:10,marginTop:2 }}>Navrženo: {sp.date}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ color:T.muted,fontSize:11,textAlign:"center",marginTop:8,marginBottom:20 }}>
-                Detailní pohled na tréninkový deník bude dostupný po napojení klientského účtu.
-              </div>
-              {/* Remove client */}
-              {confirmRemove?.id===viewingClient.id ? (
-                <div style={{ background:"rgba(224,85,85,0.08)",border:`1px solid ${T.danger}44`,borderRadius:10,padding:"14px 16px",marginTop:8 }}>
-                  <div style={{ color:T.white,fontSize:13,fontWeight:600,marginBottom:4 }}>Opravdu odebrat klienta?</div>
-                  <div style={{ color:T.muted,fontSize:11,marginBottom:12 }}>Odebráním se smaže profil, veškerá historie a přiřazené plány klienta <span style={{ color:T.white,fontWeight:700 }}>{viewingClient.name}</span>. Tuto akci nelze vrátit.</div>
-                  <div style={{ display:"flex",gap:8 }}>
-                    <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setConfirmRemove(null)}>Zrušit</Btn>
-                    <Btn small variant="danger" style={{ flex:1 }} onClick={()=>handleRemoveClient(viewingClient)}>Ano, odebrat</Btn>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={()=>setConfirmRemove(viewingClient)} style={{ width:"100%",background:"transparent",border:`1px solid ${T.danger}44`,borderRadius:9,color:T.danger,fontSize:12,fontWeight:700,padding:"10px",cursor:"pointer",fontFamily:"inherit",marginTop:4 }}>
-                  🗑 Odebrat klienta
-                </button>
-              )}
             </div>
           </div>
         </div>
