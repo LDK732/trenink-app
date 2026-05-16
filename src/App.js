@@ -1,5 +1,11 @@
 import React from "react";
 import { useState, useRef, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  "https://flfhriwvuyuunmbnmitv.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZmhyaXd2dXl1dW5tYm5taXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MDAwMjEsImV4cCI6MjA5NDE3NjAyMX0.iJExs9TdARClQL9oorge8C6hQ0UMjD4gRUE_7nGo8tw"
+);
 
 
 const T = {
@@ -1563,7 +1569,7 @@ function RecordSection({ records, setRecords, metrics, addFields, emptyForm }) {
 }
 
 // ─── SCREEN: PROFIL ──────────────────────────────────────────────────────────
-function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlans, library, userProfile, onUpdateProfile }) {
+function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlans, library, userProfile, onUpdateProfile, onLogout }) {
   const [tab,setTab] = useState("telo");
   const [profil, setProfil]         = useState({ vyska: userProfile?.vyska||"", vek: userProfile?.vek||"", pohlavi: userProfile?.pohlavi||"" });
   const [editProfil, setEditProfil] = useState(false);
@@ -1637,6 +1643,9 @@ function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlan
             </div>
             <button onClick={()=>{setEditProfil(true);setProfilForm({...profil});}}
               style={{ background:T.bgCard2,border:`1px solid ${T.borderDim}`,color:T.muted,borderRadius:8,padding:"5px 10px",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0 }}>✏️</button>
+            <button onClick={onLogout}
+              style={{ background:"transparent", border:`1px solid rgba(112,48,160,0.4)`, color:"#7030A0", borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0, marginLeft:4 }}>Odhlásit
+              </button>
           </Card>
         )}
       </div>
@@ -1775,12 +1784,13 @@ function LogoMark({ size=120 }) {
 
 // ─── ONBOARDING SCREEN ───────────────────────────────────────────────────────
 function OnboardingScreen({ onComplete }) {
-  const [step, setStep] = useState("splash"); // splash | role | form
+  const [step, setStep] = useState("splash"); // splash | role | form | login
   const [role, setRole] = useState(null);
-  const [form, setForm] = useState({ jmeno:"", pohlavi:"", vek:"", vyska:"", vaha:"" });
+  const [form, setForm] = useState({ jmeno:"", email:"", heslo:"", pohlavi:"", vek:"", vyska:"", vaha:"" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Splash auto-advance after 2.2s
+  // Splash auto-advance
   useEffect(() => {
     if (step==="splash") {
       const t = setTimeout(()=>setStep("role"), 999999);
@@ -1788,168 +1798,137 @@ function OnboardingScreen({ onComplete }) {
     }
   }, [step]);
 
-  const iS = { // input style
+  const iS = {
     width:"100%", boxSizing:"border-box",
     background:"rgba(255,255,255,0.06)", border:`1px solid rgba(255,255,255,0.12)`,
     borderRadius:10, color:"#EEEEEE", fontSize:14, padding:"12px 14px",
     outline:"none", fontFamily:"inherit", marginBottom:14,
   };
 
+  // ── SPLASH ──
   if (step === "splash") return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0a0a0a",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "Inter, sans-serif",
-        padding: "40px 20px",
-        textAlign: "center"
-      }}
-    >
-      {/* LOGO */}
-      <div style={{ marginBottom: 30 }}>
-        <LogoMark size={180} />
-      </div>
-  
-      {/* NADPIS */}
-      <img
-  src="/title.png"
-  alt="Změň své tělo"
-  style={{
-    width: 320,
-    marginTop: 0,
-    marginBottom: 20,
-    display: "block"
-  }}
-/> 
-      {/* PODTEXT */}
-      <p
-        style={{
-          color: "#aaa",
-          marginBottom: 40,
-          fontSize: 14
-        }}
-      >
-        Vítej! Kdo jsi?
-      </p>
-  
-      {/* BUTTONS */}
-      <div style={{ width: "100%", maxWidth: 320 }}>
-        
-       {/* KLIENT */}
-       <div
-          onClick={() => {
-            setRole("client");
-            setStep("form");
-          }}
-          style={{
-            padding: "18px 20px",
-            borderRadius: 16,
-            background: "rgba(24,75,94,0.25)",
-            border: "1px solid rgba(46,159,175,0.50)",
-            cursor: "pointer"
-          }}
-        >
-          <div style={{ fontSize: 22, marginBottom: 6 }}>🏋️‍♂️</div>
-          <div style={{ fontWeight: 600, color: "#fff" }}>Jsem klient</div>
-          <div style={{ fontSize: 12, color: "#aaa" }}>
-            Trénuji podle plánu od trenéra
-          </div>
+    <div style={{ minHeight:"100vh", background:"#0a0a0a", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"Inter, sans-serif", padding:"40px 20px", textAlign:"center" }}>
+      <div style={{ marginBottom:10 }}><LogoMark size={180}/></div>
+      <img src="/title.png" alt="Změň své tělo" style={{ width:320, marginTop:0, marginBottom:10, display:"block" }}/>
+      <p style={{ color:"#aaa", marginBottom:20, fontSize:14 }}>Vítej! Kdo jsi?</p>
+      <div style={{ width:"100%", maxWidth:320 }}>
+        <div onClick={()=>{ setRole("client"); setStep("form"); }} style={{ padding:"18px 20px", borderRadius:16, background:"rgba(24,75,94,0.25)", border:"1px solid rgba(46,159,175,0.50)", cursor:"pointer", marginBottom:12 }}>
+          <div style={{ fontSize:22, marginBottom:6 }}>🏋️‍♂️</div>
+          <div style={{ fontWeight:600, color:"#fff" }}>Jsem klient</div>
+          <div style={{ fontSize:12, color:"#aaa" }}>Trénuji podle plánu od trenéra</div>
         </div>
-
- {/* TRENÉR */}
-        <div
-          onClick={() => {
-            setRole("trainer");
-            setStep("form");
-          }}
-          style={{
-            marginBottom: 16,
-            padding: "18px 20px",
-            borderRadius: 16,
-            background: "#111",
-            border: "1px solid rgba(255,255,255,0.08)",
-            cursor: "pointer",
-            transition: "0.2s"
-          }}
-        >
-          <div style={{ fontSize: 22, marginBottom: 6 }}>💪</div>
-          <div style={{ fontWeight: 600, color: "#fff" }}>Jsem trenér</div>
-          <div style={{ fontSize: 12, color: "#aaa" }}>
-            Vytvářím tréninky a spravuji klienty
-          </div>
+        <div onClick={()=>{ setRole("trainer"); setStep("form"); }} style={{ marginBottom:12, padding:"18px 20px", borderRadius:16, background:"#111", border:"1px solid rgba(255,255,255,0.08)", cursor:"pointer" }}>
+          <div style={{ fontSize:22, marginBottom:6 }}>💪</div>
+          <div style={{ fontWeight:600, color:"#fff" }}>Jsem trenér</div>
+          <div style={{ fontSize:12, color:"#aaa" }}>Vytvářím tréninky a spravuji klienty</div>
         </div>
-  
+        <div onClick={()=>setStep("login")} style={{ padding:"18px 20px", borderRadius:16, background:"#111", border:"1px solid rgba(255,255,255,0.08)", cursor:"pointer" }}>
+          <div style={{ fontSize:22, marginBottom:6 }}>🔑</div>
+          <div style={{ fontWeight:600, color:"#fff" }}>Už mám účet</div>
+          <div style={{ fontSize:12, color:"#aaa" }}>Přihlásit se k existujícímu účtu</div>
+        </div>
       </div>
     </div>
   );
 
-  // Form step
-  return (
-    <div style={{ minHeight:"100vh",background:"#0a0a0a",fontFamily:"'DM Sans','Segoe UI',sans-serif",padding:"0 24px",display:"flex",flexDirection:"column",justifyContent:"center" }}>
-      <div style={{ marginBottom:24,textAlign:"center" }}>
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-  <LogoMark size={90} /></div>
- 
-  <img
-  src="/title.png"
-  alt="Změň své tělo"
-  style={{
-    width: 250,
-    marginTop: 0,
-    marginBottom: 20,
-    display: "center"
-  }}
-/>
-        <div style={{fontFamily: "Rajdhani, sans-serif",textTransform: "uppercase", color:"#EEEEEE",fontSize:17,fontWeight:700,marginBottom:4 }}>{role==="trainer"?"Profil trenéra":"Profil klienta"}</div>
-        <div style={{ color:"rgba(255,255,255,0.4)",fontSize:12 }}>Vyplň základní údaje</div>
+  // ── PŘIHLÁŠENÍ ──
+  if (step === "login") return (
+    <div style={{ minHeight:"100vh", background:"#0a0a0a", fontFamily:"'DM Sans','Segoe UI',sans-serif", padding:"0 24px", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+      <div style={{ marginBottom:24, textAlign:"center" }}>
+        <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><LogoMark size={90}/></div>
+        <img src="/title.png" alt="Změň své tělo" style={{ width:250, marginBottom:20, display:"block", margin:"0 auto 20px" }}/>
+        <div style={{ fontFamily:"Rajdhani, sans-serif", textTransform:"uppercase", color:"#EEEEEE", fontSize:17, fontWeight:700, marginBottom:4 }}>Přihlášení</div>
+        <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>Zadej email a heslo</div>
       </div>
-      <div style={{ maxWidth:380,margin:"0 auto",width:"100%" }}>
-        {/* Jméno */}
-        <div style={{ color:"rgba(255,255,255,0.5)",fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:6 }}>Jméno a příjmení *</div>
-        <input value={form.jmeno} onChange={e=>setForm(p=>({...p,jmeno:e.target.value}))} placeholder style={iS}/>
+      <div style={{ maxWidth:380, margin:"0 auto", width:"100%" }}>
+        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>Email</div>
+        <input type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="tvuj@email.cz" style={iS}/>
+        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>Heslo</div>
+        <input type="password" value={form.heslo} onChange={e=>setForm(p=>({...p,heslo:e.target.value}))} placeholder="••••••••" style={iS}/>
+        {error&&<div style={{ color:"#e05555", fontSize:12, marginBottom:10, textAlign:"center" }}>{error}</div>}
+        <button onClick={async ()=>{
+          setError(""); setLoading(true);
+          const { data, error: err } = await supabase.auth.signInWithPassword({ email: form.email, password: form.heslo });
+          if (err) { setError("Špatný email nebo heslo."); setLoading(false); return; }
+          // Načti profil z databáze
+          const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
+          setLoading(false);
+          if (profile) onComplete(profile);
+          else setError("Profil nenalezen. Zkus se zaregistrovat.");
+        }} style={{ width:"100%", marginTop:10, background:"#184b5e", border:`2px solid #2E9FAF`, borderRadius:12, color:"#fff", padding:"15px", fontWeight:900, fontSize:15, cursor:"pointer", fontFamily:"Rajdhani, sans-serif", textTransform:"uppercase", letterSpacing:0.5 }}>
+          {loading ? "Přihlašuji..." : "Přihlásit se →"}
+        </button>
+        <button onClick={()=>setStep("splash")} style={{ width:"100%", marginTop:10, background:"none", border:"none", color:"rgba(255,255,255,0.3)", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Zpět</button>
+      </div>
+    </div>
+  );
 
-        {/* Pohlaví */}
-        <div style={{ color:"rgba(255,255,255,0.5)",fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8 }}>Pohlaví</div>
-        <div style={{ display:"flex",gap:10,marginBottom:14 }}>
+  // ── REGISTRAČNÍ FORMULÁŘ ──
+  return (
+    <div style={{ minHeight:"100vh", background:"#0a0a0a", fontFamily:"'DM Sans','Segoe UI',sans-serif", padding:"0 24px", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+      <div style={{ marginBottom:24, textAlign:"center" }}>
+        <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}><LogoMark size={90}/></div>
+        <img src="/title.png" alt="Změň své tělo" style={{ width:250, marginBottom:20, display:"block", margin:"0 auto 20px" }}/>
+        <div style={{ fontFamily:"Rajdhani, sans-serif", textTransform:"uppercase", color:"#EEEEEE", fontSize:17, fontWeight:700, marginBottom:4 }}>{role==="trainer"?"Profil trenéra":"Profil klienta"}</div>
+        <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>Vyplň základní údaje</div>
+      </div>
+      <div style={{ maxWidth:380, margin:"0 auto", width:"100%" }}>
+
+        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>Jméno a příjmení *</div>
+        <input value={form.jmeno} onChange={e=>setForm(p=>({...p,jmeno:e.target.value}))} style={iS}/>
+
+        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>Email *</div>
+        <input type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="tvuj@email.cz" style={iS}/>
+
+        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>Heslo *</div>
+        <input type="password" value={form.heslo} onChange={e=>setForm(p=>({...p,heslo:e.target.value}))} placeholder="min. 6 znaků" style={iS}/>
+
+        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Pohlaví</div>
+        <div style={{ display:"flex", gap:10, marginBottom:14 }}>
           {["muž","žena"].map(g=>(
             <button key={g} onClick={()=>setForm(p=>({...p,pohlavi:g}))} style={{
-              flex:1,background:form.pohlavi===g?"rgba(46,159,175,0.2)":"rgba(255,255,255,0.05)",
+              flex:1, background:form.pohlavi===g?"rgba(46,159,175,0.2)":"rgba(255,255,255,0.05)",
               border:`1.5px solid ${form.pohlavi===g?"#2E9FAF":"rgba(255,255,255,0.1)"}`,
-              borderRadius:10,padding:"10px",color:form.pohlavi===g?"#2E9FAF":"rgba(255,255,255,0.5)",
-              fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",textTransform:"capitalize",
+              borderRadius:10, padding:"10px", color:form.pohlavi===g?"#2E9FAF":"rgba(255,255,255,0.5)",
+              fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", textTransform:"capitalize",
             }}>{g==="muž"?"♂ Muž":"♀ Žena"}</button>
           ))}
         </div>
 
-        {/* Grid fields */}
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:4 }}>
-          {[["Věk (let)","vek"],["Výška (cm)","vyska"],["Váha (kg)","vaha"]].map(([lbl,key,ph])=>(
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:4 }}>
+          {[["Věk (let)","vek"],["Výška (cm)","vyska"],["Váha (kg)","vaha"]].map(([lbl,key])=>(
             <div key={key}>
-              <div style={{ color:"rgba(255,255,255,0.5)",fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:5 }}>{lbl}</div>
-              <input value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
-                style={{ ...iS,marginBottom:0,textAlign:"center",padding:"12px 8px" }}/>
+              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:9, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:5 }}>{lbl}</div>
+              <input value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))}
+                style={{ ...iS, marginBottom:0, textAlign:"center", padding:"12px 8px" }}/>
             </div>
           ))}
         </div>
 
-        {error&&<div style={{ color:"#e05555",fontSize:12,marginTop:10,textAlign:"center" }}>{error}</div>}
+        {error&&<div style={{ color:"#e05555", fontSize:12, marginTop:10, textAlign:"center" }}>{error}</div>}
 
-        <button onClick={()=>{
-          if(!form.jmeno.trim()){ setError("Zadej prosím jméno."); return; }
-          onComplete({ role, ...form });
+        <button onClick={async ()=>{
+          if (!form.jmeno.trim()) { setError("Zadej prosím jméno."); return; }
+          if (!form.email.trim()) { setError("Zadej prosím email."); return; }
+          if (form.heslo.length < 6) { setError("Heslo musí mít alespoň 6 znaků."); return; }
+          setLoading(true); setError("");
+          // Registrace v Supabase Auth
+          const { data, error: err } = await supabase.auth.signUp({ email: form.email, password: form.heslo });
+          if (err) { setError(err.message); setLoading(false); return; }
+          // Uložení profilu do tabulky profiles
+          const profile = { id: data.user.id, role, jmeno: form.jmeno, email: form.email, pohlavi: form.pohlavi, vek: form.vek, vyska: form.vyska, vaha: form.vaha };
+          await supabase.from("profiles").insert(profile);
+          setLoading(false);
+          onComplete(profile);
         }} style={{
-          width:"100%",marginTop:20,
-          background:"#184b5e",
-          border: `2px solid ${T.accent}`,borderRadius:12,color:"#fff",
-          padding:"15px",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily: "Rajdhani, sans-serif",textTransform: "uppercase",
-          letterSpacing:0.5,boxShadow:"0 4px 20px rgba(46,159,175,0.4)",
-        }}>Vstoupit do aplikace →</button>
+          width:"100%", marginTop:20, background:"#184b5e",
+          border:`2px solid #2E9FAF`, borderRadius:12, color:"#fff",
+          padding:"15px", fontWeight:900, fontSize:15, cursor:"pointer",
+          fontFamily:"Rajdhani, sans-serif", textTransform:"uppercase",
+          letterSpacing:0.5, boxShadow:"0 4px 20px rgba(46,159,175,0.4)",
+        }}>{loading ? "Registruji..." : "Vstoupit do aplikace →"}</button>
 
-        <button onClick={()=>setStep("splash")} style={{ width:"100%",marginTop:10,background:"none",border:"none",color:"rgba(255,255,255,0.3)",fontSize:12,cursor:"pointer",fontFamily:"inherit" }}>← Zpět</button>
+        <button onClick={()=>setStep("splash")} style={{ width:"100%", marginTop:10, background:"none", border:"none", color:"rgba(255,255,255,0.3)", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Zpět</button>
       </div>
     </div>
   );
@@ -1979,10 +1958,17 @@ export default function App() {
   useEffect(() => {
     async function load() {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: profile } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+          if (profile) {
+            setUserProfile(profile);
+            setIsTrainer(profile.role === "trainer");
+          }
+        }
         const result = await window.storage.get(STORAGE_KEY);
         if (result?.value) {
           const d = JSON.parse(result.value);
-          if (d.userProfile)  { setUserProfile(d.userProfile); setIsTrainer(d.userProfile.role==="trainer"); }
           if (d.library)      setLibrary(d.library);
           if (d.exercises)    setExercises(d.exercises);
           if (d.groups)       setGroups(d.groups);
@@ -2020,6 +2006,13 @@ export default function App() {
     setScreen("workout");
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setUserProfile(null);
+    setIsTrainer(true);
+    setScreen("workout");
+  }
+
   function handleOnboardingComplete(profile) {
     setUserProfile(profile);
     setIsTrainer(profile.role==="trainer");
@@ -2044,7 +2037,7 @@ export default function App() {
   );
 
   const nav = isTrainer ? NAV_TRAINER : NAV_CLIENT;
-  const saveIndicator = saveStatus==="saving"?{color:T.muted,text:"Ukládám..."} : saveStatus==="saved"?{color:T.accent,text:"✓ Uloženo"} : saveStatus==="error"?{color:"#e05555",text:"⚠ Chyba"} : null;
+  const saveIndicator = saveStatus==="saving"?{color:T.muted,text:"Ukládám..."} : saveStatus==="saved"?{color:T.accent,text:"✓ Uloženo"} : null;
   
 
   return (
@@ -2060,7 +2053,7 @@ export default function App() {
         {screen==="exercises" && <ExercisesScreen exercises={exercises} setExercises={setExercises} isTrainer={isTrainer} groups={groups} setGroups={setGroups}/>}
         {screen==="library"   && <LibraryScreen library={library} setLibrary={setLibrary} activeInstance={activeInstance} onActivate={handleActivate} isTrainer={isTrainer} exercises={exercises} groups={groups} suggestedPlans={suggestedPlans}/>}
         {screen==="clients"   && isTrainer && <ClientsScreen library={library} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans}/>}
-        {screen==="profile"   && <ProfileScreen history={history} onReactivate={handleActivate} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans} library={library} userProfile={userProfile} onUpdateProfile={setUserProfile}/>}
+        {screen==="profile"   && <ProfileScreen history={history} onReactivate={handleActivate} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans} library={library} userProfile={userProfile} onUpdateProfile={setUserProfile} onLogout={handleLogout}/>}
       </div>
       <div style={{ position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:`#111111`,borderTop:`1px solid rgba(255,255,255,0.08)`,boxShadow:`0 -6px 24px rgba(0,0,0,0.8)`,display:"flex",justifyContent:"space-around",padding:"8px 0 20px",zIndex:100 }}>
         {nav.map(item=>(
