@@ -1195,9 +1195,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
   useEffect(() => {
     async function loadClients() {
       const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "client");
+      .rpc("get_clients");
       if (data) setClients(data);
     }
     loadClients();
