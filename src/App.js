@@ -1958,8 +1958,7 @@ export default function App() {
           const d = JSON.parse(result.value);
           if (d.library)      setLibrary(d.library);
           const { data: exData2 } = await supabase.from('exercises').select('*');
-          if (exData2 && exData2.length > 0) setExercises(exData2);
-          else if (d.exercises) setExercises(d.exercises);
+          setExercises(exData2 || []);
           if (d.groups)       setGroups(d.groups);
           if (d.activeInstance!==undefined) setActive(d.activeInstance);
           if (d.history)      setHistory(d.history);
