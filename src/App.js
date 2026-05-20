@@ -561,14 +561,31 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
     setGF(prev => ({ ...prev, [partieKey]: groupId === prev[partieKey] ? null : groupId }));
   }
 
-  function saveExercise() {
+  async function saveExercise() {
     if (!form.name.trim()) return;
-    if (editEx) { setExercises(prev => prev.map(e => e.id === editEx.id ? { ...e, ...form } : e)); setEditEx(null); }
-    else { setExercises(prev => [...prev, { id:"e"+Date.now(), ...form }]); setAdding(false); }
+    if (editEx) {
+      await supabase.from('exercises').update({
+        name: form.name, partie: form.partie, group_id: form.groupId,
+        equipment: form.equipment, description: form.desc, media_url: form.mediaUrl
+      }).eq('id', editEx.id);
+      setExercises(prev => prev.map(e => e.id === editEx.id ? { ...e, ...form } : e));
+      setEditEx(null);
+    } else {
+      const newEx = { id:"e"+Date.now(), created_by: (await supabase.auth.getUser()).data.user.id,
+        name: form.name, partie: form.partie, group_id: form.groupId,
+        equipment: form.equipment, description: form.desc, media_url: form.mediaUrl };
+      await supabase.from('exercises').insert([newEx]);
+      setExercises(prev => [...prev, { ...newEx, groupId: form.groupId, desc: form.desc, mediaUrl: form.mediaUrl }]);
+      setAdding(false);
+    }
     setForm(EMPTY_FORM);
   }
 
-  function deleteExercise(id) { setExercises(prev => prev.filter(e => e.id !== id)); setSelected(null); }
+  async function deleteExercise(id) { 
+    await supabase.from('exercises').delete().eq('id', id);
+    setExercises(prev => prev.filter(e => e.id !== id)); 
+    setSelected(null); 
+  }
   function addGroup(partieKey) { if (!newGroupLabel.trim()) return; setGroups(prev => [...prev, { id:"g"+Date.now(), partie:partieKey, label:newGroupLabel.trim() }]); setNGL(""); }
   function deleteGroup(groupId) { setGroups(prev => prev.filter(g => g.id !== groupId)); }
 
@@ -1940,7 +1957,9 @@ export default function App() {
         if (result?.value) {
           const d = JSON.parse(result.value);
           if (d.library)      setLibrary(d.library);
-          if (d.exercises)    setExercises(d.exercises);
+          const { data: exData2 } = await supabase.from('exercises').select('*');
+          if (exData2 && exData2.length > 0) setExercises(exData2);
+          else if (d.exercises) setExercises(d.exercises);
           if (d.groups)       setGroups(d.groups);
           if (d.activeInstance!==undefined) setActive(d.activeInstance);
           if (d.history)      setHistory(d.history);
