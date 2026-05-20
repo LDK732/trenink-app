@@ -1954,12 +1954,12 @@ export default function App() {
           }
         }
         const result = await window.storage.get(STORAGE_KEY);
+        const { data: exData2 } = await supabase.from('exercises').select('*');
+        setExercises(exData2 || []); console.log("Supabase cviky:", exData2);
         if (result?.value) {
           const d = JSON.parse(result.value);
-          if (d.library)      setLibrary(d.library);
-          const { data: exData2 } = await supabase.from('exercises').select('*');
-          setExercises(exData2 || []); console.log("Supabase cviky:", exData2);
-          if (d.groups)       setGroups(d.groups);
+          if (d.library)    setLibrary(d.library);
+          if (d.groups)     setGroups(d.groups);
           if (d.activeInstance!==undefined) setActive(d.activeInstance);
           if (d.history)      setHistory(d.history);
           if (d.exData)       setExData(d.exData);
