@@ -1089,16 +1089,16 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
     setEditing(newPlan);
   }
   async function savePlan(updatedPlan) {
-    await supabase.from('plans').update({
-      name: updatedPlan.name,
-      description: updatedPlan.desc,
-      weeks: updatedPlan.weeks,
-      locked: updatedPlan.locked || false,
-      blocks: updatedPlan.blocks,
-    }).eq('id', updatedPlan.id);
-    setLibrary(prev=>prev.map(t=>t.id===updatedPlan.id?updatedPlan:t));
-    setEditing(updatedPlan);
-  }
+  await supabase.from('plans').update({
+    name: updatedPlan.name,
+    description: updatedPlan.desc,
+    weeks: updatedPlan.weeks,
+    locked: updatedPlan.locked || false,
+    blocks: updatedPlan.blocks,
+  }).eq('id', updatedPlan.id);
+  setLibrary(prev=>prev.map(t=>t.id===updatedPlan.id?updatedPlan:t));
+  setEditing(updatedPlan);
+}
 
   if (wizard && isTrainer) return <PlanWizard onSave={handleWizardSave} onCancel={()=>setWizard(false)}/>;
 
@@ -1115,9 +1115,14 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
         <div style={{ padding:"18px 18px 0",display:"flex",justifyContent:"space-between" }}>
           <button onClick={()=>{ setSelected(null); setConfirmDel(null); }} style={{ background:"none",border:"none",color:T.accent,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit" }}>← Zpět</button>
           {isTrainer&&<div style={{ display:"flex",gap:8 }}>
-            <Btn small variant="ghost" onClick={()=>setEditing(tmpl)}>✏️ Upravit</Btn>
-            <Btn small variant="ghost" onClick={()=>handleDuplicate(tmpl)}>Duplikovat</Btn>
-            <Btn small variant="danger" onClick={()=>setConfirmDel(tmpl.id)}>Smazat</Btn>
+          <Btn small variant="ghost" onClick={()=>setEditing(tmpl)}>✏️ Upravit</Btn>
+          <Btn small variant="ghost" onClick={()=>handleDuplicate(tmpl)}>Duplikovat</Btn>
+          <Btn small variant="ghost" onClick={async ()=>{
+          const newLocked = !tmpl.locked;
+          await supabase.from('plans').update({ locked: newLocked }).eq('id', tmpl.id);
+          setLibrary(prev=>prev.map(t=>t.id===tmpl.id?{...t,locked:newLocked}:t));
+          }}>{tmpl.locked ? "🔓 Odemknout" : "🔒 Zamknout"}</Btn>
+          <Btn small variant="danger" onClick={()=>setConfirmDel(tmpl.id)}>Smazat</Btn>
           </div>}
         </div>
         {confirmDel===tmpl.id&&(
@@ -1983,14 +1988,12 @@ export default function App() {
         const result = await window.storage?.get(STORAGE_KEY);
         const { data: exData2 } = await supabase.from('exercises').select('*');
         setExercises(exData2 || []); console.log("Supabase cviky:", exData2);
+        const { data: plansData } = await supabase.from('plans').select('*');
+        if (plansData && plansData.length > 0) {
+        setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
+        }
         if (result?.value) {
           const d = JSON.parse(result.value);
-          const { data: plansData } = await supabase.from('plans').select('*');
-          if (plansData && plansData.length > 0) {
-          setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
-          } else if (d.library) {
-          setLibrary(d.library);
-          }
           if (d.groups)     setGroups(d.groups);
           if (d.activeInstance!==undefined) setActive(d.activeInstance);
           if (d.history)      setHistory(d.history);
