@@ -1958,7 +1958,7 @@ export default function App() {
           const d = JSON.parse(result.value);
           if (d.library)      setLibrary(d.library);
           const { data: exData2 } = await supabase.from('exercises').select('*');
-          setExercises(exData2 || []);
+          setExercises(exData2 || []); console.log("Supabase cviky:", exData2);
           if (d.groups)       setGroups(d.groups);
           if (d.activeInstance!==undefined) setActive(d.activeInstance);
           if (d.history)      setHistory(d.history);
