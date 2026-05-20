@@ -1068,10 +1068,37 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
       })
     : library;
 
-  function handleDelete(id) { setLibrary(prev=>prev.filter(t=>t.id!==id)); setSelected(null); setEditing(null); setConfirmDel(null); }
+    async function handleDelete(id) {
+      await supabase.from('plans').delete().eq('id', id);
+      setLibrary(prev=>prev.filter(t=>t.id!==id)); setSelected(null); setEditing(null); setConfirmDel(null);
+    }
   function handleDuplicate(tmpl) { setLibrary(prev=>[...prev,{...JSON.parse(JSON.stringify(tmpl)),id:"t"+Date.now(),name:tmpl.name+" (kopie)"}]); }
-  function handleWizardSave(newPlan) { setLibrary(prev=>[...prev, newPlan]); setWizard(false); setEditing(newPlan); }
-  function savePlan(updatedPlan) { setLibrary(prev=>prev.map(t=>t.id===updatedPlan.id?updatedPlan:t)); setEditing(updatedPlan); }
+  async function handleWizardSave(newPlan) {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('plans').insert([{
+      id: newPlan.id,
+      name: newPlan.name,
+      description: newPlan.desc,
+      weeks: newPlan.weeks,
+      locked: newPlan.locked || false,
+      blocks: newPlan.blocks,
+      created_by: user.id
+    }]);
+    setLibrary(prev => [...prev, newPlan]);
+    setWizard(false);
+    setEditing(newPlan);
+  }
+  async function savePlan(updatedPlan) {
+    await supabase.from('plans').update({
+      name: updatedPlan.name,
+      description: updatedPlan.desc,
+      weeks: updatedPlan.weeks,
+      locked: updatedPlan.locked || false,
+      blocks: updatedPlan.blocks,
+    }).eq('id', updatedPlan.id);
+    setLibrary(prev=>prev.map(t=>t.id===updatedPlan.id?updatedPlan:t));
+    setEditing(updatedPlan);
+  }
 
   if (wizard && isTrainer) return <PlanWizard onSave={handleWizardSave} onCancel={()=>setWizard(false)}/>;
 
@@ -1958,7 +1985,12 @@ export default function App() {
         setExercises(exData2 || []); console.log("Supabase cviky:", exData2);
         if (result?.value) {
           const d = JSON.parse(result.value);
-          if (d.library)    setLibrary(d.library);
+          const { data: plansData } = await supabase.from('plans').select('*');
+          if (plansData && plansData.length > 0) {
+          setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
+          } else if (d.library) {
+          setLibrary(d.library);
+          }
           if (d.groups)     setGroups(d.groups);
           if (d.activeInstance!==undefined) setActive(d.activeInstance);
           if (d.history)      setHistory(d.history);
