@@ -1965,7 +1965,7 @@ export default function App() {
           if (d.exData)       setExData(d.exData);
           if (d.suggestedPlans) setSuggestedPlans(d.suggestedPlans);
         }
-      } catch(e) {}
+      } catch(e) { console.error("Load error:", e); }
       setLoaded(true);
     }
     load();
