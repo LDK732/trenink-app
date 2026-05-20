@@ -1953,7 +1953,7 @@ export default function App() {
             setIsTrainer(profile.role === "trainer");
           }
         }
-        const result = await window.storage.get(STORAGE_KEY);
+        const result = await window.storage?.get(STORAGE_KEY);
         const { data: exData2 } = await supabase.from('exercises').select('*');
         setExercises(exData2 || []); console.log("Supabase cviky:", exData2);
         if (result?.value) {
