@@ -1060,13 +1060,15 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
   const [planFilter, setPlanFilter] = useState(null); // null | "kombinace" | "silovy" | "hypertrofie"
 
   // Filter library by block type
+  const assignedPlanIds = suggestedPlans?.assignedPlanIds || [];
   const filteredLibrary = planFilter
-    ? library.filter(tmpl => {
-        const types = (tmpl.blocks||[]).map(b=>b.type).filter(Boolean);
-        if (planFilter==="kombinace") return types.includes("kombinace") || (types.includes("silovy")&&types.includes("hypertrofie"));
-        return types.includes(planFilter);
-      })
-    : library;
+      ? library.filter(tmpl => {
+          if (planFilter==="assigned") return assignedPlanIds.includes(tmpl.id);
+          const types = (tmpl.blocks||[]).map(b=>b.type).filter(Boolean);
+          if (planFilter==="kombinace") return types.includes("kombinace") || (types.includes("silovy")&&types.includes("hypertrofie"));
+          return types.includes(planFilter);
+        })
+      : library;
 
     async function handleDelete(id) {
       await supabase.from('plans').delete().eq('id', id);
@@ -1179,17 +1181,23 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
       <PageHeader label="Tréninkové plány" title="Plány" action={isTrainer&&<Btn small onClick={()=>setWizard(true)}>+ Nový plán</Btn>}/>
       {/* Type filter chips */}
       <div style={{ display:"flex",gap:6,padding:"14px 18px 6px",overflowX:"auto" }}>
-        {[{id:null,label:"Vše"},{id:"kombinace",label:"Kombinovaný"},{id:"silovy",label:"Silový"},{id:"hypertrofie",label:"Hypertrofie"}].map(f=>{
-          const active = planFilter===f.id;
-          return (
-            <button key={String(f.id)} onClick={()=>setPlanFilter(f.id)} style={{
-              background:active?T.accent+"28":T.bgCard2, border:`1.5px solid ${active?T.accent:T.borderDim}`,
-              borderRadius:20, padding:"5px 13px", fontSize:10, fontWeight:700, cursor:"pointer",
-              whiteSpace:"nowrap", fontFamily:"inherit", color:active?T.accent:T.muted, flexShrink:0,
-              boxShadow:active?`0 0 12px ${T.accent}44`:"none",
-            }}>{f.label}</button>
-          );
-        })}
+      {[{id:null,label:"Vše"},{id:"kombinace",label:"Kombinovaný"},{id:"silovy",label:"Silový"},{id:"hypertrofie",label:"Hypertrofie"},{id:"assigned",label:"Přiřazené"}].map(f=>{
+  const isAssigned = f.id === "assigned";
+  const hasNew = isAssigned && (suggestedPlans?.assignedPlanIds||[]).length > 0;
+  const active = planFilter===f.id;
+  return (
+    <button key={String(f.id)} onClick={()=>setPlanFilter(f.id)} style={{
+      background:active?T.accent+"28":T.bgCard2, border:`1.5px solid ${active?T.accent:hasNew?"#FF9500":T.borderDim}`,
+      borderRadius:20, padding:"5px 13px", fontSize:10, fontWeight:700, cursor:"pointer",
+      whiteSpace:"nowrap", fontFamily:"inherit", color:active?T.accent:hasNew?"#FF9500":T.muted, flexShrink:0,
+      boxShadow:active?`0 0 12px ${T.accent}44`:hasNew?`0 0 8px rgba(255,149,0,0.4)`:"none",
+      position:"relative",
+    }}>
+      {f.label}
+      {hasNew&&!active&&<span style={{ position:"absolute",top:-4,right:-4,width:8,height:8,borderRadius:"50%",background:"#FF9500",border:`1.5px solid ${T.bg}` }}/>}
+    </button>
+  );
+})}
       </div>
       <div style={{ padding:"8px 12px 0",display:"flex",flexDirection:"column",gap:10 }}>
         {filteredLibrary.map(tmpl=>{
@@ -1258,22 +1266,12 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
     return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
   }).length;
 
-  function handleAssign(client, tmpl) {
-    const key = "c_self";
-    setSuggestedPlans(prev => {
-      const existing = prev[key] || [];
-      if (existing.some(p=>p.templateId===tmpl.id)) return prev;
-      return {
-        ...prev,
-        [key]: [...existing, {
-          templateId: tmpl.id,
-          name: tmpl.name,
-          date: new Date().toLocaleDateString("cs-CZ"),
-          assignedBy: "Trenér",
-          forClient: client.jmeno,
-        }]
-      };
-    });
+  async function handleAssign(client, tmpl) {
+    await supabase.from('plan_assignments').insert([{
+      plan_id: tmpl.id,
+      client_id: client.id,
+      assigned_by: (await supabase.auth.getUser()).data.user.id,
+    }]);
     setAssigningClient(null);
   }
 
@@ -1991,6 +1989,11 @@ export default function App() {
         const { data: plansData } = await supabase.from('plans').select('*');
         if (plansData && plansData.length > 0) {
         setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
+        }
+        const { data: assignments } = await supabase.from('plan_assignments').select('*').eq('client_id', session?.user?.id);
+        if (assignments && assignments.length > 0) {
+        const assignedPlanIds = assignments.map(a => a.plan_id);
+        setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
         }
         if (result?.value) {
           const d = JSON.parse(result.value);
