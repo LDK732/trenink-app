@@ -1167,9 +1167,9 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
           })}
           {isActive
             ?<div style={{ background:"rgba(46,159,175,0.1)",border:`1px solid ${T.accent}44`,borderRadius:10,padding:"11px 16px",textAlign:"center",color:T.accent,fontSize:13,fontWeight:700 }}>✓ Tento plán je aktuálně aktivní</div>
-            : tmpl.locked && !isTrainer && !(suggestedPlans?.["c_self"]||[]).some(p=>p.templateId===tmpl.id)
-              ? <div style={{ background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.1)`,borderRadius:10,padding:"11px 16px",textAlign:"center",color:T.muted,fontSize:13,fontWeight:600 }}>🔒 Tento plán je zamčený – vyžaduje přidělení od trenéra</div>
-              : <Btn full onClick={()=>{onActivate(tmpl.id);setSelected(null);}}>Aktivovat plán →</Btn>
+            : tmpl.locked && !isTrainer && !(suggestedPlans?.assignedPlanIds||[]).includes(tmpl.id)
+            ? <div style={{ background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.1)`,borderRadius:10,padding:"11px 16px",textAlign:"center",color:T.muted,fontSize:13,fontWeight:600 }}>🔒 Tento plán je zamčený – vyžaduje přidělení od trenéra</div>
+            : <Btn full onClick={()=>{onActivate(tmpl.id);setSelected(null);}}>Aktivovat plán →</Btn>
           }
         </div>
       </div>
@@ -1249,11 +1249,18 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
   const [confirmRemove,   setConfirmRemove]   = useState(null);
 
   // Načti klienty ze Supabase
+  const [assignmentCounts, setAssignmentCounts] = useState({});
+
   useEffect(() => {
     async function loadClients() {
-      const { data } = await supabase
-      .rpc("get_clients");
+      const { data } = await supabase.rpc("get_clients");
       if (data) setClients(data);
+      const { data: assignments } = await supabase.from('plan_assignments').select('client_id');
+      if (assignments) {
+        const counts = {};
+        assignments.forEach(a => { counts[a.client_id] = (counts[a.client_id] || 0) + 1; });
+        setAssignmentCounts(counts);
+      }
     }
     loadClients();
   }, []);
@@ -1349,7 +1356,10 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
                     <div style={{ color:T.white,fontWeight:700,fontSize:15 }}>{c.jmeno}</div>
+                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    {assignmentCounts[c.id] > 0 && <span style={{ background:"rgba(255,149,0,0.15)",color:"#FF9500",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,border:"1px solid rgba(255,149,0,0.3)" }}>📋 Přiřazen plán</span>}
                     <span style={{ background:"rgba(46,159,175,0.15)",color:T.accent,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20 }}>Aktivní</span>
+                   </div>
                   </div>
                   <div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{c.email}</div>
                   {clientSuggested>0&&<div style={{ color:"#FF9500",fontSize:10,marginTop:2,fontWeight:600 }}>📋 {clientSuggested} navrhovaný plán{clientSuggested>1?"y":""}</div>}
