@@ -1267,11 +1267,14 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
   }).length;
 
   async function handleAssign(client, tmpl) {
-    await supabase.from('plan_assignments').insert([{
+    const { error } = await supabase.from('plan_assignments').insert([{
       plan_id: tmpl.id,
       client_id: client.id,
       assigned_by: (await supabase.auth.getUser()).data.user.id,
     }]);
+    if (!error) {
+      alert(`Plán "${tmpl.name}" byl přiřazen klientovi ${client.jmeno}`);
+    }
     setAssigningClient(null);
   }
 
