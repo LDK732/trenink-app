@@ -1304,7 +1304,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
         </div>
         <div style={{ padding:"0 12px",display:"flex",flexDirection:"column",gap:10 }}>
           {library.map(tmpl=>{
-            const alreadyAssigned = (suggestedPlans["c_self"]||[]).some(p=>p.templateId===tmpl.id && p.forClient===assigningClient.jmeno);
+            const alreadyAssigned = (assignmentPlanIds[assigningClient.id]||[]).includes(tmpl.id);
             const types = [...new Set((tmpl.blocks||[]).map(b=>b.type).filter(Boolean))];
             const typeLabel = types.includes("kombinace")||types.length>1?"Kombinovaný":types.includes("silovy")?"Silový":types.includes("hypertrofie")?"Hypertrofie":"";
             const typeColor = typeLabel==="Silový"?"#FF9500":typeLabel==="Hypertrofie"?"#00CC00":T.accent;
@@ -1320,8 +1320,23 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
                   </div>
                 </div>
                 {alreadyAssigned
-                  ? <div style={{ color:T.muted,fontSize:12,textAlign:"center",padding:"6px 0" }}>✓ Již přiřazeno</div>
-                  : <Btn full onClick={()=>handleAssign(assigningClient,tmpl)}>Přiřadit tento plán →</Btn>}
+                ? <Btn full variant="danger" onClick={async ()=>{
+                await supabase.from('plan_assignments').delete()
+                .eq('plan_id', tmpl.id)
+                .eq('client_id', assigningClient.id);
+                const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id');
+                if (assignments) {
+                const counts = {};
+                const planIds = {};
+                assignments.forEach(a => {
+                counts[a.client_id] = (counts[a.client_id] || 0) + 1;
+                planIds[a.client_id] = [...(planIds[a.client_id] || []), a.plan_id];
+                });
+                setAssignmentCounts(counts);
+                setAssignmentPlanIds(planIds);
+                }
+                }}>Odebrat tento plán</Btn>
+                : <Btn full onClick={()=>handleAssign(assigningClient,tmpl)}>Přiřadit tento plán →</Btn>}
               </Card>
             );
           })}
