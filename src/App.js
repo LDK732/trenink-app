@@ -1286,6 +1286,9 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
       client_id: client.id,
       assigned_by: (await supabase.auth.getUser()).data.user.id,
     }]);
+    if (!error) {
+      alert(`Plán "${tmpl.name}" byl přiřazen klientovi ${client.jmeno}`);
+    }
     setAssigningClient(null);
   }
 
