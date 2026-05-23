@@ -1287,9 +1287,9 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
       assigned_by: (await supabase.auth.getUser()).data.user.id,
     }]);
     if (!error) {
-      alert(`Plán "${tmpl.name}" byl přiřazen klientovi ${client.jmeno}`);
+      setAssignmentCounts(prev => ({ ...prev, [client.id]: (prev[client.id] || 0) + 1 }));
+      setAssignmentPlanIds(prev => ({ ...prev, [client.id]: [...(prev[client.id] || []), tmpl.id] }));
     }
-    setAssigningClient(null);
   }
 
   // ── Assign plan modal ──
