@@ -1250,17 +1250,24 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
 
   // Načti klienty ze Supabase
   const [assignmentCounts, setAssignmentCounts] = useState({});
+  const [assignmentPlanIds, setAssignmentPlanIds] = useState({});
+  const [showAssignedPlans, setShowAssignedPlans] = useState(null);
 
   useEffect(() => {
     async function loadClients() {
       const { data } = await supabase.rpc("get_clients");
       if (data) setClients(data);
-      const { data: assignments } = await supabase.from('plan_assignments').select('client_id');
+      const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id');
       if (assignments) {
-        const counts = {};
-        assignments.forEach(a => { counts[a.client_id] = (counts[a.client_id] || 0) + 1; });
-        setAssignmentCounts(counts);
-      }
+      const counts = {};
+      const planIds = {};
+      assignments.forEach(a => {
+      counts[a.client_id] = (counts[a.client_id] || 0) + 1;
+      planIds[a.client_id] = [...(planIds[a.client_id] || []), a.plan_id];
+  });
+  setAssignmentCounts(counts);
+  setAssignmentPlanIds(planIds);
+}
     }
     loadClients();
   }, []);
@@ -1279,9 +1286,6 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
       client_id: client.id,
       assigned_by: (await supabase.auth.getUser()).data.user.id,
     }]);
-    if (!error) {
-      alert(`Plán "${tmpl.name}" byl přiřazen klientovi ${client.jmeno}`);
-    }
     setAssigningClient(null);
   }
 
@@ -1357,9 +1361,17 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
                     <div style={{ color:T.white,fontWeight:700,fontSize:15 }}>{c.jmeno}</div>
                     <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                    {assignmentCounts[c.id] > 0 && <span style={{ background:"rgba(255,149,0,0.15)",color:"#FF9500",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,border:"1px solid rgba(255,149,0,0.3)" }}>📋 Přiřazen plán</span>}
+                    {assignmentCounts[c.id] > 0 && <span onClick={()=>setShowAssignedPlans(showAssignedPlans===c.id?null:c.id)} style={{ background:"rgba(255,149,0,0.15)",color:"#FF9500",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,border:"1px solid rgba(255,149,0,0.3)",cursor:"pointer" }}>📋 Přiřazen plán</span>}
                     <span style={{ background:"rgba(46,159,175,0.15)",color:T.accent,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20 }}>Aktivní</span>
-                   </div>
+                   </div>{showAssignedPlans===c.id && (
+                   <div style={{ marginTop:8, padding:"8px 12px", background:"rgba(255,149,0,0.08)", borderRadius:8, border:"1px solid rgba(255,149,0,0.2)" }}>
+                   <div style={{ color:"#FF9500", fontSize:10, fontWeight:700, marginBottom:4 }}>Přiřazené plány:</div>
+                  {(assignmentPlanIds[c.id]||[]).map(pid => {
+                  const plan = library.find(t=>t.id===pid);
+                  return plan ? <div key={pid} style={{ color:T.white, fontSize:12, padding:"2px 0" }}>• {plan.name}</div> : null;
+                  })}
+                 </div>
+                  )}
                   </div>
                   <div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{c.email}</div>
                   {clientSuggested>0&&<div style={{ color:"#FF9500",fontSize:10,marginTop:2,fontWeight:600 }}>📋 {clientSuggested} navrhovaný plán{clientSuggested>1?"y":""}</div>}
