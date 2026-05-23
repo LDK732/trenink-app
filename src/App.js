@@ -523,7 +523,19 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
           <div style={{ color:T.accent, fontSize:9, letterSpacing:2.5, textTransform:"uppercase", marginBottom:5, fontWeight:700, opacity:0.8 }}>Aktivní trénink</div>
           <div style={{ color:T.white, fontWeight:700, fontSize:20, lineHeight:1.2, maxWidth:220 }}>{tmpl.name}</div>
         </div>
-        <button onClick={() => setCompleted(prev=>prev.includes(weekIdx)?prev.filter(w=>w!==weekIdx):[...prev,weekIdx])} style={{ background:completedWeeks.includes(weekIdx)?T.accentBtn:"transparent", border:`1.5px solid ${T.accent}`, color:completedWeeks.includes(weekIdx)?"#fff":T.accent, borderRadius:9, padding:"7px 13px", fontWeight:700, fontSize:12, cursor:"pointer", flexShrink:0, marginLeft:10, fontFamily:"inherit" }}>{completedWeeks.includes(weekIdx)?"✓ Splněno":"Označit týden"}</button>
+        <button onClick={async () => {
+        const newCompleted = completedWeeks.includes(weekIdx)
+        ? completedWeeks.filter(w=>w!==weekIdx)
+        : [...completedWeeks, weekIdx];
+        setCompleted(newCompleted);
+        if (newCompleted.length >= tmpl.weeks) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('plan_assignments')
+        .update({ completed: true })
+        .eq('plan_id', tmpl.id)
+        .eq('client_id', user.id);
+  }
+}} style={{ background:completedWeeks.includes(weekIdx)?T.accentBtn:"transparent", border:`1.5px solid ${T.accent}`, color:completedWeeks.includes(weekIdx)?"#fff":T.accent, borderRadius:9, padding:"7px 13px", fontWeight:700, fontSize:12, cursor:"pointer", flexShrink:0, marginLeft:10, fontFamily:"inherit" }}>{completedWeeks.includes(weekIdx)?"✓ Splněno":"Označit týden"}</button>
       </div>
       <div style={{ display:"flex", gap:5, padding:"14px 18px 12px", overflowX:"auto" }}>
         {WEEKS.slice(0,tmpl.weeks).map((w,i) => {
@@ -2033,11 +2045,14 @@ export default function App() {
         if (plansData && plansData.length > 0) {
         setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
         }
-        const { data: assignments } = await supabase.from('plan_assignments').select('*').eq('client_id', session?.user?.id);
+        const { data: assignments } = await supabase.from('plan_assignments')
+        .select('*')
+        .eq('client_id', session?.user?.id)
+        .eq('completed', false);
         if (assignments && assignments.length > 0) {
         const assignedPlanIds = assignments.map(a => a.plan_id);
         setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
-        }
+       }
         if (result?.value) {
           const d = JSON.parse(result.value);
           if (d.groups)     setGroups(d.groups);
