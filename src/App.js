@@ -454,11 +454,23 @@ function ExDetailModal({ ex, exercises, onClose }) {
 // ─── SCREEN: AKTUÁLNÍ TRÉNINK ─────────────────────────────────────────────────
 function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exercises, groups, exData, setExData }) {
   const [weekIdx, setWeekIdx]          = useState(0);
-  const [completedWeeks, setCompleted] = useState([]);
+  const [completedWeeks, setCompleted] = useState([]); 
+
+        useEffect(() => {
+        async function loadProgress() {
+        if (!activeInstance?.progressId) return;
+        const { data } = await supabase.from('user_progress').select('completed_weeks').eq('id', activeInstance.progressId).single();
+       if (data?.completed_weeks) setCompleted(data.completed_weeks);
+       }
+       loadProgress();
+       }, [activeInstance?.progressId]);
   const [detailEx, setDetailEx]        = useState(null);
 
   function handleChange(exId, field, val, wIdx) {
     setExData(prev => {
+      if (activeInstance?.progressId) {
+      supabase.from('user_progress').update({ ex_data: exData }).eq('id', activeInstance.progressId);
+    }
       const u = {...prev};
       if (field==="weight") {
         for(let w=wIdx;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),weight:val};
@@ -528,14 +540,17 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
         ? completedWeeks.filter(w=>w!==weekIdx)
         : [...completedWeeks, weekIdx];
         setCompleted(newCompleted);
+        if (activeInstance?.progressId) {
+        await supabase.from('user_progress').update({ completed_weeks: newCompleted }).eq('id', activeInstance.progressId);
+        }
         if (newCompleted.length >= tmpl.weeks) {
         const { data: { user } } = await supabase.auth.getUser();
         await supabase.from('plan_assignments')
         .update({ completed: true })
         .eq('plan_id', tmpl.id)
         .eq('client_id', user.id);
-  }
-}} style={{ background:completedWeeks.includes(weekIdx)?T.accentBtn:"transparent", border:`1.5px solid ${T.accent}`, color:completedWeeks.includes(weekIdx)?"#fff":T.accent, borderRadius:9, padding:"7px 13px", fontWeight:700, fontSize:12, cursor:"pointer", flexShrink:0, marginLeft:10, fontFamily:"inherit" }}>{completedWeeks.includes(weekIdx)?"✓ Splněno":"Označit týden"}</button>
+       }
+        }} style={{ background:completedWeeks.includes(weekIdx)?T.accentBtn:"transparent", border:`1.5px solid ${T.accent}`, color:completedWeeks.includes(weekIdx)?"#fff":T.accent, borderRadius:9, padding:"7px 13px", fontWeight:700, fontSize:12, cursor:"pointer", flexShrink:0, marginLeft:10, fontFamily:"inherit" }}>{completedWeeks.includes(weekIdx)?"✓ Splněno":"Označit týden"}</button>
       </div>
       <div style={{ display:"flex", gap:5, padding:"14px 18px 12px", overflowX:"auto" }}>
         {WEEKS.slice(0,tmpl.weeks).map((w,i) => {
@@ -2053,12 +2068,23 @@ export default function App() {
         const assignedPlanIds = assignments.map(a => a.plan_id);
         setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
        }
+        if (d.activeInstance!==undefined) setActive(d.activeInstance);
+        if (d.history)      setHistory(d.history);
+        if (d.exData)       setExData(d.exData);
+        if (session) {
+        const { data: progress } = await supabase.from('user_progress')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('active', true)
+        .single();
+        if (progress) {
+        setActive({ templateId: progress.plan_id, startDate: progress.started_at, progressId: progress.id });
+        setExData(progress.ex_data || {});
+       }
+     }
         if (result?.value) {
           const d = JSON.parse(result.value);
           if (d.groups)     setGroups(d.groups);
-          if (d.activeInstance!==undefined) setActive(d.activeInstance);
-          if (d.history)      setHistory(d.history);
-          if (d.exData)       setExData(d.exData);
           if (d.suggestedPlans) setSuggestedPlans(d.suggestedPlans);
         }
       } catch(e) { console.error("Load error:", e); }
@@ -2080,13 +2106,24 @@ export default function App() {
     }, 800);
   }, [userProfile, library, exercises, groups, activeInstance, history, exData, suggestedPlans, loaded]);
 
-  function handleActivate(templateId) {
+  async function handleActivate(templateId) {
     if (templateId==="goto-library") { setScreen("library"); return; }
+    const { data: { user } } = await supabase.auth.getUser();
     if (activeInstance) {
       const tmpl=library.find(t=>t.id===activeInstance.templateId);
       setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:6}]);
+      if (activeInstance.progressId) {
+        await supabase.from('user_progress').update({ active: false }).eq('id', activeInstance.progressId);
+      }
     }
-    setActive({templateId,startDate:new Date().toLocaleDateString("cs-CZ")});
+    const { data: newProgress } = await supabase.from('user_progress').insert([{
+      user_id: user.id,
+      plan_id: templateId,
+      completed_weeks: [],
+      ex_data: {},
+      active: true,
+    }]).select().single();
+    setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
     setScreen("workout");
   }
 
