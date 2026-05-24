@@ -2069,11 +2069,11 @@ export default function App() {
           setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
         }
         if (session) {
-          const { data: progress } = await supabase.from('user_progress')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .eq('active', true)
-            .single();
+          const { data: progressList } = await supabase.from('user_progress')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('active', true);
+          const progress = progressList?.[0] || null;
           if (progress) {
             setActive({ templateId: progress.plan_id, startDate: progress.started_at, progressId: progress.id });
             setExData(progress.ex_data || {});
