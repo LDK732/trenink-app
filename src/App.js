@@ -2055,36 +2055,34 @@ export default function App() {
         }
         const result = await window.storage?.get(STORAGE_KEY);
         const { data: exData2 } = await supabase.from('exercises').select('*');
-        setExercises(exData2 || []); console.log("Supabase cviky:", exData2);
+        setExercises(exData2 || []);
         const { data: plansData } = await supabase.from('plans').select('*');
         if (plansData && plansData.length > 0) {
-        setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
+          setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
         }
         const { data: assignments } = await supabase.from('plan_assignments')
-        .select('*')
-        .eq('client_id', session?.user?.id)
-        .eq('completed', false);
+          .select('*')
+          .eq('client_id', session?.user?.id)
+          .eq('completed', false);
         if (assignments && assignments.length > 0) {
-        const assignedPlanIds = assignments.map(a => a.plan_id);
-        setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
-       }
-        if (d.activeInstance!==undefined) setActive(d.activeInstance);
-        if (d.history)      setHistory(d.history);
-        if (d.exData)       setExData(d.exData);
+          const assignedPlanIds = assignments.map(a => a.plan_id);
+          setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
+        }
         if (session) {
-        const { data: progress } = await supabase.from('user_progress')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('active', true)
-        .single();
-        if (progress) {
-        setActive({ templateId: progress.plan_id, startDate: progress.started_at, progressId: progress.id });
-        setExData(progress.ex_data || {});
-       }
-     }
+          const { data: progress } = await supabase.from('user_progress')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .eq('active', true)
+            .single();
+          if (progress) {
+            setActive({ templateId: progress.plan_id, startDate: progress.started_at, progressId: progress.id });
+            setExData(progress.ex_data || {});
+          }
+        }
         if (result?.value) {
           const d = JSON.parse(result.value);
-          if (d.groups)     setGroups(d.groups);
+          if (d.groups)         setGroups(d.groups);
+          if (d.history)        setHistory(d.history);
           if (d.suggestedPlans) setSuggestedPlans(d.suggestedPlans);
         }
       } catch(e) { console.error("Load error:", e); }
