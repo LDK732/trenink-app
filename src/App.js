@@ -452,7 +452,7 @@ function ExDetailModal({ ex, exercises, onClose }) {
 }
 
 // ─── SCREEN: AKTUÁLNÍ TRÉNINK ─────────────────────────────────────────────────
-function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exercises, groups, exData, setExData }) {
+function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exercises, groups, exData, setExData, setSuggestedPlans }) {
   const [weekIdx, setWeekIdx]          = useState(0);
   const [completedWeeks, setCompleted] = useState([]); 
 
@@ -544,12 +544,16 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
         await supabase.from('user_progress').update({ completed_weeks: newCompleted }).eq('id', activeInstance.progressId);
         }
         if (newCompleted.length >= tmpl.weeks) {
-        const { data: { user } } = await supabase.auth.getUser();
-        await supabase.from('plan_assignments')
-        .update({ completed: true })
-        .eq('plan_id', tmpl.id)
-        .eq('client_id', user.id);
-       }
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from('plan_assignments')
+            .update({ completed: true })
+            .eq('plan_id', tmpl.id)
+            .eq('client_id', user.id);
+             setSuggestedPlans(prev => ({
+            ...prev,
+            assignedPlanIds: (prev.assignedPlanIds || []).filter(id => id !== tmpl.id)
+          }));
+        }
         }} style={{ background:completedWeeks.includes(weekIdx)?T.accentBtn:"transparent", border:`1.5px solid ${T.accent}`, color:completedWeeks.includes(weekIdx)?"#fff":T.accent, borderRadius:9, padding:"7px 13px", fontWeight:700, fontSize:12, cursor:"pointer", flexShrink:0, marginLeft:10, fontFamily:"inherit" }}>{completedWeeks.includes(weekIdx)?"✓ Splněno":"Označit týden"}</button>
       </div>
       <div style={{ display:"flex", gap:5, padding:"14px 18px 12px", overflowX:"auto" }}>
@@ -2168,7 +2172,7 @@ export default function App() {
         </div>
       )}
       <div style={{ minHeight:"calc(100vh - 72px)" }}>
-        {screen==="workout"   && <WorkoutScreen activeInstance={activeInstance} onActivate={handleActivate} library={library} setLibrary={setLibrary} exercises={exercises} groups={groups} exData={exData} setExData={setExData}/>}
+        {screen==="workout" && <WorkoutScreen activeInstance={activeInstance} onActivate={handleActivate} library={library} setLibrary={setLibrary} exercises={exercises} groups={groups} exData={exData} setExData={setExData} setSuggestedPlans={setSuggestedPlans}/>}
         {screen==="exercises" && <ExercisesScreen exercises={exercises} setExercises={setExercises} isTrainer={isTrainer} groups={groups} setGroups={setGroups}/>}
         {screen==="library"   && <LibraryScreen library={library} setLibrary={setLibrary} activeInstance={activeInstance} onActivate={handleActivate} isTrainer={isTrainer} exercises={exercises} groups={groups} suggestedPlans={suggestedPlans}/>}
         {screen==="clients"   && isTrainer && <ClientsScreen library={library} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans}/>}
