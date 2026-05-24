@@ -454,36 +454,40 @@ function ExDetailModal({ ex, exercises, onClose }) {
 // ─── SCREEN: AKTUÁLNÍ TRÉNINK ─────────────────────────────────────────────────
 function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exercises, groups, exData, setExData, setSuggestedPlans }) {
   const [weekIdx, setWeekIdx]          = useState(0);
-  const [completedWeeks, setCompleted] = useState([]); 
-
-        useEffect(() => {
-        async function loadProgress() {
-        if (!activeInstance?.progressId) return;
-        const { data } = await supabase.from('user_progress').select('completed_weeks').eq('id', activeInstance.progressId).single();
-       if (data?.completed_weeks) setCompleted(data.completed_weeks);
-       }
-       loadProgress();
-       }, [activeInstance?.progressId]);
+  const [completedWeeks, setCompleted] = useState([]);
   const [detailEx, setDetailEx]        = useState(null);
 
-  function handleChange(exId, field, val, wIdx) {
-    setExData(prev => {
-      if (activeInstance?.progressId) {
-      supabase.from('user_progress').update({ ex_data: exData }).eq('id', activeInstance.progressId);
-    }
-      const u = {...prev};
-      if (field==="weight") {
-        for(let w=wIdx;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),weight:val};
-      } else if (field==="note") {
-        for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),note:val};
-      } else if (field==="noteB") {
-        for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),noteB:val};
-      } else {
-        u[`${wIdx}_${exId}`]={...(u[`${wIdx}_${exId}`]||{}),reps:val};
-      }
-      return u;
-    });
+useEffect(() => {
+  async function loadProgress() {
+    if (!activeInstance?.progressId) return;
+    const { data } = await supabase.from('user_progress')
+      .select('completed_weeks, ex_data')
+      .eq('id', activeInstance.progressId)
+      .single();
+    if (data?.completed_weeks) setCompleted(data.completed_weeks);
+    if (data?.ex_data && Object.keys(data.ex_data).length > 0) setExData(data.ex_data);
   }
+  loadProgress();
+}, [activeInstance?.progressId]);
+
+function handleChange(exId, field, val, wIdx) {
+  setExData(prev => {
+    const u = {...prev};
+    if (field==="weight") {
+      for(let w=wIdx;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),weight:val};
+    } else if (field==="note") {
+      for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),note:val};
+    } else if (field==="noteB") {
+      for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),noteB:val};
+    } else {
+      u[`${wIdx}_${exId}`]={...(u[`${wIdx}_${exId}`]||{}),reps:val};
+    }
+    if (activeInstance?.progressId) {
+      supabase.from('user_progress').update({ ex_data: u }).eq('id', activeInstance.progressId);
+    }
+    return u;
+  });
+}
 
   // Vymění cvik v tréninkovém bloku (klient si může vybrat jiný ze skupiny)
   function handleSwap(blockId, section, oldExId, newEx) {
