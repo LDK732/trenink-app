@@ -388,7 +388,7 @@ function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises
   const hasSilove = (block.silove||[]).length > 0;
   const hasHyper  = (block.hypertrofie||[]).length > 0;
   return (
-    <div style={{ border:`1.5px solid ${T.blockBorder}`, borderRadius:13, marginBottom:14, overflow:"hidden", boxShadow:`0 0 18px rgba(107,63,160,0.18), 0 6px 24px rgba(0,0,0,0.6)` }}>
+    <div style={{ border:`1.5px solid ${T.blockBorder}`, borderRadius:13, marginBottom:14, overflow:"hidden", boxShadow:`0 0 18px rgba(24,75,94,0.18), 0 6px 24px rgba(0,0,0,0.6)` }}>
       <div onClick={() => setOpen(o=>!o)} style={{ padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:`#1a1a1a`, borderBottom:open?`1px solid rgba(255,255,255,0.06)`:"none" }}>
         <div style={{ display:"flex", alignItems:"center", gap:11 }}>
           <span style={{ width:30, height:30, background:T.accentBtn, color:"#fff", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:14, flexShrink:0 }}>{blockIndex + 1}</span>
