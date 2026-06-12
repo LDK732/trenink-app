@@ -2100,40 +2100,43 @@ export default function App() {
   }, []);
 
   // ─── REALTIME: plan_assignments ──────────────────────────────────────────────
-useEffect(() => {
-  let userId = null;
-
-  supabase.auth.getUser().then(({ data }) => {
-    userId = data?.user?.id;
-    if (!userId) return;
-
-    const channel = supabase
-      .channel('plan-assignments-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',               // INSERT, UPDATE, DELETE
-          schema: 'public',
-          table: 'plan_assignments',
-          filter: `client_id=eq.${userId}`,
-        },
-        async () => {
-          // Znovu načti assignments pro tohoto klienta
-          const { data: assignments } = await supabase
-            .from('plan_assignments')
-            .select('*')
-            .eq('client_id', userId)
-            .eq('completed', false);
-
-          const assignedPlanIds = (assignments || []).map(a => a.plan_id);
-          setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
-        }
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
-  });
-}, []);
+  useEffect(() => {
+    if (!userProfile) return;
+  
+    let channel = null;
+  
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data?.user?.id;
+      if (!userId) return;
+  
+      channel = supabase
+        .channel('plan-assignments-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'plan_assignments',
+            filter: `client_id=eq.${userId}`,
+          },
+          async () => {
+            const { data: assignments } = await supabase
+              .from('plan_assignments')
+              .select('*')
+              .eq('client_id', userId)
+              .eq('completed', false);
+  
+            const assignedPlanIds = (assignments || []).map(a => a.plan_id);
+            setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
+          }
+        )
+        .subscribe();
+    });
+  
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [userProfile]);
 
   useEffect(() => {
     if (!loaded) return;
