@@ -2169,6 +2169,10 @@ export default function App() {
       active: true,
     }]).select().single();
     setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
+    setSuggestedPlans(prev => ({
+      ...prev,
+      assignedPlanIds: (prev.assignedPlanIds || []).filter(id => id !== templateId)
+    }));
     setScreen("workout");
   }
 
