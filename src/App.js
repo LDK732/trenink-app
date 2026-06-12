@@ -2091,7 +2091,7 @@ export default function App() {
           const d = JSON.parse(result.value);
           if (d.groups)         setGroups(d.groups);
           if (d.history)        setHistory(d.history);
-          if (d.suggestedPlans) setSuggestedPlans(d.suggestedPlans);
+          if (d.suggestedPlans) setSuggestedPlans(prev => ({ ...d.suggestedPlans, assignedPlanIds: prev.assignedPlanIds }));
         }
       } catch(e) { console.error("Load error:", e); }
       setLoaded(true);
