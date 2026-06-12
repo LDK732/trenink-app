@@ -388,7 +388,7 @@ function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises
   const hasSilove = (block.silove||[]).length > 0;
   const hasHyper  = (block.hypertrofie||[]).length > 0;
   return (
-    <div style={{ border:`1.5px solid ${T.blockBorder}`, borderRadius:13, marginBottom:14, overflow:"hidden", boxShadow:`0 0 18px rgba(24,75,94,0.18), 0 6px 24px rgba(0,0,0,0.6)` }}>
+    <div style={{ border:`1.5px solid ${T.blockBorder}`, borderRadius:13, marginBottom:14, overflow:"hidden", boxShadow:`0 0 18px rgba(0,206,209,0.18), 0 6px 24px rgba(0,0,0,0.6)` }}>
       <div onClick={() => setOpen(o=>!o)} style={{ padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:`#1a1a1a`, borderBottom:open?`1px solid rgba(255,255,255,0.06)`:"none" }}>
         <div style={{ display:"flex", alignItems:"center", gap:11 }}>
           <span style={{ width:30, height:30, background:T.accentBtn, color:"#fff", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:14, flexShrink:0 }}>{blockIndex + 1}</span>
@@ -2098,6 +2098,42 @@ export default function App() {
     }
     load();
   }, []);
+
+  // ─── REALTIME: plan_assignments ──────────────────────────────────────────────
+useEffect(() => {
+  let userId = null;
+
+  supabase.auth.getUser().then(({ data }) => {
+    userId = data?.user?.id;
+    if (!userId) return;
+
+    const channel = supabase
+      .channel('plan-assignments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',               // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'plan_assignments',
+          filter: `client_id=eq.${userId}`,
+        },
+        async () => {
+          // Znovu načti assignments pro tohoto klienta
+          const { data: assignments } = await supabase
+            .from('plan_assignments')
+            .select('*')
+            .eq('client_id', userId)
+            .eq('completed', false);
+
+          const assignedPlanIds = (assignments || []).map(a => a.plan_id);
+          setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  });
+}, []);
 
   useEffect(() => {
     if (!loaded) return;
