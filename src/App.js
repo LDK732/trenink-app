@@ -2073,7 +2073,14 @@ export default function App() {
           .eq('client_id', session?.user?.id)
           .eq('completed', false);
         const assignedPlanIds = (assignments || []).map(a => a.plan_id);
-          setSuggestedPlans(prev => ({ ...prev, assignedPlanIds, newAssignedPlanIds: assignedPlanIds }));
+          const { data: progressList } = await supabase
+            .from('user_progress')
+            .select('plan_id')
+            .eq('user_id', session?.user?.id)
+            .eq('active', true);
+          const activePlanIds = (progressList || []).map(p => p.plan_id);
+          const newAssignedPlanIds = assignedPlanIds.filter(id => !activePlanIds.includes(id));
+          setSuggestedPlans(prev => ({ ...prev, assignedPlanIds, newAssignedPlanIds }));
         if (session) {
           const { data: progressList } = await supabase.from('user_progress')
           .select('*')
