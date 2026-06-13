@@ -603,7 +603,18 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
         name: form.name, partie: form.partie, group_id: form.groupId,
         equipment: form.equipment, description: form.desc, media_url: form.mediaUrl
       }).eq('id', editEx.id);
-      setExercises(prev => prev.map(e => e.id === editEx.id ? { ...e, ...form } : e));
+      setExercises(prev => prev.map(e => e.id === editEx.id ? {
+        ...e,
+        name: form.name,
+        partie: form.partie,
+        group_id: form.groupId,
+        groupId: form.groupId,
+        equipment: form.equipment,
+        description: form.desc,
+        desc: form.desc,
+        media_url: form.mediaUrl,
+        mediaUrl: form.mediaUrl
+      } : e));
       setEditEx(null);
     } else {
       const newEx = { id:"e"+Date.now(), created_by: (await supabase.auth.getUser()).data.user.id,
