@@ -1218,7 +1218,7 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
       <div style={{ display:"flex",gap:6,padding:"14px 18px 6px",overflowX:"auto" }}>
       {[{id:null,label:"Vše"},{id:"kombinace",label:"Kombinovaný"},{id:"silovy",label:"Silový"},{id:"hypertrofie",label:"Hypertrofie"},{id:"assigned",label:"Přiřazené"}].map(f=>{
   const isAssigned = f.id === "assigned";
-  const hasNew = isAssigned && (suggestedPlans?.assignedPlanIds||[]).length > 0;
+  const hasNew = isAssigned && (suggestedPlans?.newAssignedPlanIds||[]).length > 0;
   const active = planFilter===f.id;
   return (
     <button key={String(f.id)} onClick={()=>setPlanFilter(f.id)} style={{
@@ -2127,7 +2127,11 @@ export default function App() {
               .eq('completed', false);
   
             const assignedPlanIds = (assignments || []).map(a => a.plan_id);
-            setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
+            setSuggestedPlans(prev => ({
+              ...prev,
+              assignedPlanIds: assignedPlanIds,
+              newAssignedPlanIds: assignedPlanIds
+            }));
           }
         )
         .subscribe();
@@ -2171,7 +2175,7 @@ export default function App() {
     setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
     setSuggestedPlans(prev => ({
       ...prev,
-      assignedPlanIds: (prev.assignedPlanIds || []).filter(id => id !== templateId)
+      newAssignedPlanIds: (prev.newAssignedPlanIds || []).filter(id => id !== templateId)
     }));
     setScreen("workout");
   }
