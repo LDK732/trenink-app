@@ -2072,10 +2072,8 @@ export default function App() {
           .select('*')
           .eq('client_id', session?.user?.id)
           .eq('completed', false);
-        if (assignments && assignments.length > 0) {
-          const assignedPlanIds = assignments.map(a => a.plan_id);
-          setSuggestedPlans(prev => ({ ...prev, assignedPlanIds }));
-        }
+        const assignedPlanIds = (assignments || []).map(a => a.plan_id);
+          setSuggestedPlans(prev => ({ ...prev, assignedPlanIds, newAssignedPlanIds: assignedPlanIds }));
         if (session) {
           const { data: progressList } = await supabase.from('user_progress')
           .select('*')
@@ -2091,7 +2089,7 @@ export default function App() {
           const d = JSON.parse(result.value);
           if (d.groups)         setGroups(d.groups);
           if (d.history)        setHistory(d.history);
-          if (d.suggestedPlans) setSuggestedPlans(prev => ({ ...d.suggestedPlans, assignedPlanIds: prev.assignedPlanIds }));
+          if (d.suggestedPlans) setSuggestedPlans(prev => ({ ...d.suggestedPlans, assignedPlanIds: prev.assignedPlanIds, newAssignedPlanIds: prev.newAssignedPlanIds }));
         }
       } catch(e) { console.error("Load error:", e); }
       setLoaded(true);
@@ -2126,12 +2124,12 @@ export default function App() {
               .eq('client_id', userId)
               .eq('completed', false);
   
-            const assignedPlanIds = (assignments || []).map(a => a.plan_id);
-            setSuggestedPlans(prev => ({
-              ...prev,
-              assignedPlanIds: assignedPlanIds,
-              newAssignedPlanIds: assignedPlanIds
-            }));
+              const assignedPlanIds = (assignments || []).map(a => a.plan_id);
+              setSuggestedPlans(prev => ({
+                ...prev,
+                assignedPlanIds,
+                newAssignedPlanIds: assignedPlanIds
+              }));
           }
         )
         .subscribe();
