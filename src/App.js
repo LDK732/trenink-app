@@ -2134,6 +2134,26 @@ export default function App() {
         )
         .subscribe();
     });
+
+    useEffect(() => {
+      const channel = supabase
+        .channel('exercises-and-plans-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'exercises' },
+          async () => {
+            const { data } = await supabase.from('exercises').select('*');
+            setExercises(data || []);
+          }
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'plans' },
+          async () => {
+            const { data } = await supabase.from('plans').select('*');
+            setLibrary(data?.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })) || []);
+          }
+        )
+        .subscribe();
+    
+      return () => supabase.removeChannel(channel);
+    }, []);
   
     return () => {
       if (channel) supabase.removeChannel(channel);
