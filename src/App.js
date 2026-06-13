@@ -2090,6 +2090,7 @@ export default function App() {
           if (progress) {
             setActive({ templateId: progress.plan_id, startDate: progress.started_at, progressId: progress.id });
             setExData(progress.ex_data || {});
+            console.log("ACTIVE NAČTENO:", progress.plan_id);
           }
         }
         if (result?.value) {
