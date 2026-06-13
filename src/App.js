@@ -2097,6 +2097,7 @@ export default function App() {
           if (d.groups)         setGroups(d.groups);
           if (d.history)        setHistory(d.history);
           if (d.suggestedPlans) setSuggestedPlans(prev => ({ ...d.suggestedPlans, assignedPlanIds: prev.assignedPlanIds, newAssignedPlanIds: prev.newAssignedPlanIds }));
+          if (d.activeInstance) {} // záměrně ignorujeme - načítáme ze Supabase
         }
       } catch(e) { console.error("Load error:", e); }
       setLoaded(true);
@@ -2175,7 +2176,7 @@ export default function App() {
     setSaveStatus("saving");
     saveTimerRef.current = setTimeout(async () => {
       try {
-        await window.storage.set(STORAGE_KEY, JSON.stringify({ userProfile, library, exercises, groups, activeInstance, history, exData, suggestedPlans }));
+        await window.storage.set(STORAGE_KEY, JSON.stringify({ userProfile, library, exercises, groups, history, exData, suggestedPlans }));
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
       } catch(e) { setSaveStatus("error"); }
