@@ -2104,6 +2104,14 @@ export default function App() {
       setLoaded(true);
     }
     load();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        load();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // ─── REALTIME: plan_assignments ──────────────────────────────────────────────
