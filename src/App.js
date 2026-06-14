@@ -599,10 +599,11 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
   async function saveExercise() {
     if (!form.name.trim()) return;
     if (editEx) {
-      await supabase.from('exercises').update({
+      const { error } = await supabase.from('exercises').update({
         name: form.name, partie: form.partie, group_id: form.groupId,
         equipment: form.equipment, description: form.desc, media_url: form.mediaUrl
       }).eq('id', editEx.id);
+      console.log("UPDATE result:", error);
       setExercises(prev => prev.map(e => e.id === editEx.id ? {
         ...e,
         name: form.name,
