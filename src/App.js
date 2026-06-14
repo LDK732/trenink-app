@@ -581,7 +581,7 @@ function handleChange(exId, field, val, wIdx) {
         })}
       </div>
       <div style={{ padding:"0 12px" }}>
-      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={exData[`block_open_${block.id}`] ?? false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
+      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={exData[`block_open_${block.id}`] !== false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
       </div>
       <div style={{ padding:"6px 18px 0", color:T.muted, fontSize:10, textAlign:"center" }}>💡 📖 detail · 📝 poznámka · Podržením názvu = cviky skupiny</div>
     </div>
