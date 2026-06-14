@@ -383,13 +383,13 @@ function SectionRow({ label, timerSeconds }) {
 }
 
 // ─── TRAINING BLOCK ──────────────────────────────────────────────────────────
-function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises, groups, blockIndex, onSwapEx }) {
-  const [open, setOpen] = useState(true);
+function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises, groups, blockIndex, onSwapEx, initialOpen, onToggle }) {
+  const [open, setOpen] = useState(initialOpen);
   const hasSilove = (block.silove||[]).length > 0;
   const hasHyper  = (block.hypertrofie||[]).length > 0;
   return (
     <div style={{ border:`1.5px solid ${T.blockBorder}`, borderRadius:13, marginBottom:14, overflow:"hidden", boxShadow:`0 0 18px rgba(24,75,94,0.18), 0 6px 24px rgba(0,0,0,0.6)` }}>
-      <div onClick={() => setOpen(o=>!o)} style={{ padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:`#1a1a1a`, borderBottom:open?`1px solid rgba(255,255,255,0.06)`:"none" }}>
+      <div onClick={() => { setOpen(o => { const next = !o; onToggle(next); return next; }); }} style={{ padding:"11px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:`#1a1a1a`, borderBottom:open?`1px solid rgba(255,255,255,0.06)`:"none" }}>
         <div style={{ display:"flex", alignItems:"center", gap:11 }}>
           <span style={{ width:30, height:30, background:T.accentBtn, color:"#fff", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:14, flexShrink:0 }}>{blockIndex + 1}</span>
           <div>
@@ -488,6 +488,8 @@ function handleChange(exId, field, val, wIdx) {
       for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),note:val};
     } else if (field==="noteB") {
       for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),noteB:val};
+    } else if (field==="blockOpen") {
+      u[`block_open_${exId}`] = val;
     } else {
       u[`${wIdx}_${exId}`]={...(u[`${wIdx}_${exId}`]||{}),reps:val};
     }
@@ -579,7 +581,7 @@ function handleChange(exId, field, val, wIdx) {
         })}
       </div>
       <div style={{ padding:"0 12px" }}>
-        {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap}/>)}
+      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={exData[`block_open_${block.id}`] ?? false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
       </div>
       <div style={{ padding:"6px 18px 0", color:T.muted, fontSize:10, textAlign:"center" }}>💡 📖 detail · 📝 poznámka · Podržením názvu = cviky skupiny</div>
     </div>
