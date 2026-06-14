@@ -20,7 +20,7 @@ const T = {
   muted:      "#888888",
   borderDim:  "rgba(255,255,255,0.07)",
   borderGlow: "rgba(46,159,175,0.3)",
-  blockBorder:"#184b5e",
+  blockBorder:"#00ced1",
   shadow:     "0 6px 24px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.4)",
   shadowSm:   "0 3px 12px rgba(0,0,0,0.5)",
   innerGlow:  "inset 0 1px 0 rgba(255,255,255,0.05)",
