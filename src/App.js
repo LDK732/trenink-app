@@ -457,18 +457,27 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
   const [completedWeeks, setCompleted] = useState([]);
   const [detailEx, setDetailEx]        = useState(null);
 
-useEffect(() => {
-  async function loadProgress() {
-    if (!activeInstance?.progressId) return;
-    const { data } = await supabase.from('user_progress')
-      .select('completed_weeks, ex_data')
-      .eq('id', activeInstance.progressId)
-      .single();
-    if (data?.completed_weeks) setCompleted(data.completed_weeks);
-    if (data?.ex_data && Object.keys(data.ex_data).length > 0) setExData(data.ex_data);
-  }
-  loadProgress();
-}, [activeInstance?.progressId]);
+  useEffect(() => {
+    async function loadProgress() {
+      if (!activeInstance?.progressId) return;
+      const { data } = await supabase.from('user_progress')
+        .select('completed_weeks, ex_data')
+        .eq('id', activeInstance.progressId)
+        .single();
+      if (data?.completed_weeks) {
+        setCompleted(data.completed_weeks);
+        // Najdi první neoznačený týden
+        const tmpl = library.find(t => t.id === activeInstance.templateId);
+        const totalWeeks = tmpl?.weeks || 6;
+        const allWeeks = Array.from({ length: totalWeeks }, (_, i) => i);
+        const firstUncompleted = allWeeks.find(w => !data.completed_weeks.includes(w));
+        // Pokud jsou všechny označené, zůstaň na posledním
+        setWeekIdx(firstUncompleted !== undefined ? firstUncompleted : totalWeeks - 1);
+      }
+      if (data?.ex_data && Object.keys(data.ex_data).length > 0) setExData(data.ex_data);
+    }
+    loadProgress();
+  }, [activeInstance?.progressId]);
 
 function handleChange(exId, field, val, wIdx) {
   setExData(prev => {
