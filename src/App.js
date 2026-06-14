@@ -581,7 +581,9 @@ function handleChange(exId, field, val, wIdx) {
         })}
       </div>
       <div style={{ padding:"0 12px" }}>
-      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={exData[`block_open_${block.id}`] !== false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
+      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={Object.keys(exData).filter(k => !k.startsWith('block_open_')).length > 0 
+      ? exData[`block_open_${block.id}`] !== false 
+      : false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
       </div>
       <div style={{ padding:"6px 18px 0", color:T.muted, fontSize:10, textAlign:"center" }}>💡 📖 detail · 📝 poznámka · Podržením názvu = cviky skupiny</div>
     </div>
@@ -2234,18 +2236,6 @@ export default function App() {
       active: true,
     }]).select().single();
     setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
-    // Zavři všechny bloky při první aktivaci
-    const tmpl = library.find(t => t.id === templateId);
-    if (tmpl) {
-      const closedBlocks = {};
-      tmpl.blocks.forEach(block => {
-      closedBlocks[`block_open_${block.id}`] = false;
-      });
-      setExData(closedBlocks);
-      if (newProgress?.id) {
-      supabase.from('user_progress').update({ ex_data: closedBlocks }).eq('id', newProgress.id);
-  }
-}
     setSuggestedPlans(prev => ({
       ...prev,
       newAssignedPlanIds: (prev.newAssignedPlanIds || []).filter(id => id !== templateId)
