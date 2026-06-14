@@ -492,7 +492,8 @@ function handleChange(exId, field, val, wIdx) {
       u[`${wIdx}_${exId}`]={...(u[`${wIdx}_${exId}`]||{}),reps:val};
     }
     if (activeInstance?.progressId) {
-      supabase.from('user_progress').update({ ex_data: u }).eq('id', activeInstance.progressId);
+      supabase.from('user_progress').update({ ex_data: u }).eq('id', activeInstance.progressId)
+        .then(({ error }) => console.log("exData save:", error, "progressId:", activeInstance.progressId));
     }
     return u;
   });
