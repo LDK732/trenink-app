@@ -2234,6 +2234,18 @@ export default function App() {
       active: true,
     }]).select().single();
     setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
+    // Zavři všechny bloky při první aktivaci
+    const tmpl = library.find(t => t.id === templateId);
+    if (tmpl) {
+      const closedBlocks = {};
+      tmpl.blocks.forEach(block => {
+      closedBlocks[`block_open_${block.id}`] = false;
+      });
+      setExData(closedBlocks);
+      if (newProgress?.id) {
+      supabase.from('user_progress').update({ ex_data: closedBlocks }).eq('id', newProgress.id);
+  }
+}
     setSuggestedPlans(prev => ({
       ...prev,
       newAssignedPlanIds: (prev.newAssignedPlanIds || []).filter(id => id !== templateId)
