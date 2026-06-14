@@ -2084,7 +2084,7 @@ export default function App() {
         }
         const result = await window.storage?.get(STORAGE_KEY);
         const { data: exData2 } = await supabase.from('exercises').select('*');
-        setExercises(exData2 || []);
+        setExercises((exData2 || []).map(e => ({ ...e, desc: e.description, mediaUrl: e.media_url, groupId: e.group_id })));
         const { data: plansData } = await supabase.from('plans').select('*');
         if (plansData && plansData.length > 0) {
           setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
@@ -2184,10 +2184,10 @@ export default function App() {
     const channel = supabase
       .channel('exercises-and-plans-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'exercises' },
-        async () => {
-          const { data } = await supabase.from('exercises').select('*');
-          setExercises(data || []);
-        }
+      async () => {
+        const { data } = await supabase.from('exercises').select('*');
+        setExercises((data || []).map(e => ({ ...e, desc: e.description, mediaUrl: e.media_url, groupId: e.group_id })));
+      }
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'plans' },
         async () => {
