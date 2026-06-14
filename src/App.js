@@ -581,7 +581,7 @@ function handleChange(exId, field, val, wIdx) {
         })}
       </div>
       <div style={{ padding:"0 12px" }}>
-      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={Object.keys(exData).filter(k => !k.startsWith('block_open_')).length > 0 
+      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={!exData._initialized 
       ? exData[`block_open_${block.id}`] !== false 
       : false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
       </div>
@@ -2232,10 +2232,11 @@ export default function App() {
       user_id: user.id,
       plan_id: templateId,
       completed_weeks: [],
-      ex_data: {},
+      ex_data: { _initialized: true },
       active: true,
     }]).select().single();
     setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
+    setExData({ _initialized: true });
     setSuggestedPlans(prev => ({
       ...prev,
       newAssignedPlanIds: (prev.newAssignedPlanIds || []).filter(id => id !== templateId)
