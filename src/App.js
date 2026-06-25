@@ -475,6 +475,29 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
         setWeekIdx(firstUncompleted !== undefined ? firstUncompleted : totalWeeks - 1);
       }
       if (data?.ex_data && Object.keys(data.ex_data).length > 0) setExData(data.ex_data);
+      // Aplikuj uložené výměny cviků
+      if (data?.ex_data) {
+      const swaps = Object.entries(data.ex_data).filter(([k]) => k.startsWith('swap_'));
+      if (swaps.length > 0) {
+      setLibrary(prev => prev.map(tmpl => {
+      if (tmpl.id !== activeInstance.templateId) return tmpl;
+      return {
+        ...tmpl,
+        blocks: tmpl.blocks.map(block => ({
+          ...block,
+          silove: (block.silove || []).map(ex => {
+            const swap = data.ex_data[`swap_${block.id}_silove_${ex.id}`];
+            return swap ? { ...ex, ...swap } : ex;
+          }),
+          hypertrofie: (block.hypertrofie || []).map(ex => {
+            const swap = data.ex_data[`swap_${block.id}_hypertrofie_${ex.id}`];
+            return swap ? { ...ex, ...swap } : ex;
+          }),
+        }))
+      };
+    }));
+  }
+}
     }
     loadProgress();
   }, [activeInstance?.progressId]);
@@ -503,6 +526,23 @@ function handleChange(exId, field, val, wIdx) {
 
   // Vymění cvik v tréninkovém bloku (klient si může vybrat jiný ze skupiny)
   function handleSwap(blockId, section, oldExId, newEx) {
+    // Ulož výměnu do exData
+    const swapKey = `swap_${blockId}_${section}_${oldExId}`;
+    setExData(prev => {
+      const u = { ...prev, [swapKey]: { name: newEx.name, partie: newEx.partie, refType: "exercise", refId: newEx.id } };
+  // Smaž poznámky pro starý cvik ve všech týdnech
+    for (let w = 0; w < 6; w++) {
+    if (u[`${w}_${oldExId}`]) {
+    u[`${w}_${oldExId}`] = { ...u[`${w}_${oldExId}`], note: undefined, noteB: undefined };
+  }
+}
+      if (activeInstance?.progressId) {
+        supabase.from('user_progress').update({ ex_data: u }).eq('id', activeInstance.progressId)
+          .then(({ error }) => console.log("swap save:", error));
+      }
+      return u;
+    });
+    // Aktualizuj lokální library
     setLibrary(prev => prev.map(tmpl => {
       if (tmpl.id !== activeInstance.templateId) return tmpl;
       return {
@@ -513,13 +553,7 @@ function handleChange(exId, field, val, wIdx) {
             ...block,
             [section]: block[section].map(ex => {
               if (ex.id !== oldExId) return ex;
-              return {
-                ...ex,
-                name: newEx.name,
-                partie: newEx.partie,
-                refType: "exercise",
-                refId: newEx.id,
-              };
+              return { ...ex, name: newEx.name, partie: newEx.partie, refType: "exercise", refId: newEx.id };
             })
           };
         })
