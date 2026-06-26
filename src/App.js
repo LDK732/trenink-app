@@ -270,9 +270,9 @@ function THead() {
   return (
     <thead><tr>
       <th style={{ ...thStyle, textAlign:"left", paddingLeft:12 }}>Cvik</th>
+      <th style={{ ...thStyle, width:72 }}>Váha</th>
       <th style={{ ...thStyle, width:44 }}>Série</th>
       <th style={{ ...thStyle, width:100 }}>Opakování</th>
-      <th style={{ ...thStyle, width:72 }}>Váha</th>
     </tr></thead>
   );
 }
@@ -343,12 +343,11 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
         onSaveNote={v=>onChange(ex.id,"note",v,weekIdx)}
         onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
         onSwapEx={onSwapEx}/>
+      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
       <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.serie}</td>
       <td style={cellStyle}>
-        <input value={reps} onChange={e=>onChange(ex.id,"reps",e.target.value,weekIdx)} placeholder="—"
-          style={{ width:88, background:"transparent", border:`1px solid ${reps?T.accent+"66":T.borderDim}`, borderRadius:6, color:reps?T.accent:T.muted, fontSize:12, fontWeight:600, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
-      </td>
-      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
+      <input value={reps} onChange={e=>onChange(ex.id,"reps",e.target.value,weekIdx)} placeholder="–" style={{ width:88, background:"transparent", border:`1px solid ${reps?T.accent+"66":T.borderDim}`, borderRadius:6, color:reps?T.accent:T.muted, fontSize:12, fontWeight:600, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+    </td>
     </tr>
   );
 }
@@ -362,9 +361,9 @@ function HypertrofieRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises,
         onSaveNote={v=>onChange(ex.id,"note",v,weekIdx)}
         onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
         onSwapEx={onSwapEx}/>
+      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
       <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.serie}</td>
       <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.rep}</td>
-      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
     </tr>
   );
 }
@@ -393,8 +392,8 @@ function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises
         <div style={{ display:"flex", alignItems:"center", gap:11 }}>
           <span style={{ width:30, height:30, background:T.accentBtn, color:"#fff", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:14, flexShrink:0 }}>{blockIndex + 1}</span>
           <div>
-            <div style={{ color:T.white, fontWeight:700, fontSize:14 }}>{block.day}</div>
-            <div style={{ color:T.muted, fontSize:11, marginTop:1 }}>{block.label}</div>
+            <div style={{ color:T.white, fontWeight:700, fontSize:14 }}>{block.label}</div>
+            <div style={{ color:T.muted, fontSize:11, marginTop:1 }}>{block.day}</div>
           </div>
         </div>
         <span style={{ color:T.muted, fontSize:12, transform:open?"rotate(180deg)":"none", transition:"0.2s" }}>▼</span>
