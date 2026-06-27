@@ -266,13 +266,22 @@ function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onS
 const thStyle = { padding:"7px 8px", color:T.muted, fontSize:10, fontWeight:700, letterSpacing:0.8, textTransform:"uppercase", textAlign:"center", borderBottom:`1px solid rgba(255,255,255,0.07)`, background:`#1e1e1e` };
 const cellStyle = { background:`#161616`, borderBottom:`1px solid rgba(255,255,255,0.04)`, padding:"0 6px", textAlign:"center" };
 
-function THead() {
+function THead({ isSilove }) {
   return (
     <thead><tr>
       <th style={{ ...thStyle, textAlign:"left", paddingLeft:12 }}>Cvik</th>
       <th style={{ ...thStyle, width:72 }}>Váha</th>
-      <th style={{ ...thStyle, width:100 }}>Opakování</th>
-      <th style={{ ...thStyle, width:72 }}>Cíl</th>
+      {isSilove ? (
+        <>
+          <th style={{ ...thStyle, width:100 }}>Opakování</th>
+          <th style={{ ...thStyle, width:72 }}>Cíl</th>
+        </>
+      ) : (
+        <>
+          <th style={{ ...thStyle, width:44 }}>Série</th>
+          <th style={{ ...thStyle, width:100 }}>Opakování</th>
+        </>
+      )}
     </tr></thead>
   );
 }
@@ -335,17 +344,27 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
 
 function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx }) {
   const weight = wd.weight ?? ex.vaha;
-  const reps   = wd.reps ?? null;
+  const reps = wd.reps ?? null;
 
   // Vypočítej předvyplněná opakování pro daný týden
   function getPlaceholderReps() {
-    if (weekIdx === 0) return ex.rep || "";
     const baseReps = (ex.rep || "").split(",").map(r => parseInt(r.trim())).filter(n => !isNaN(n));
     if (baseReps.length === 0) return ex.rep || "";
+    if (weekIdx === 0) return ex.rep || "";
+    // Varianta B: začíná na více sériích (3,3,3,3,3) — každý týden -1 série až na 3, pak +1 opakování
+    const baseSerie = baseReps.length; // počet sérií = počet čísel v rep
+    if (baseSerie > 3) {
+      const targetSerie = Math.max(3, baseSerie - weekIdx);
+      const baseRep = baseReps[0];
+      const addedReps = Math.max(0, weekIdx - (baseSerie - 3));
+      return Array(targetSerie).fill(baseRep + addedReps).join(",");
+    }
+    // Varianta A: standardní +1/týden
     return baseReps.map(r => r + weekIdx).join(",");
   }
 
   const placeholderReps = getPlaceholderReps();
+  const isWeek0 = weekIdx === 0;
 
   return (
     <tr>
@@ -356,13 +375,25 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
         onSwapEx={onSwapEx}/>
       <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
       <td style={cellStyle}>
-        <input value={reps ?? ""} onChange={e=>onChange(ex.id,"reps",e.target.value,weekIdx)} placeholder={placeholderReps}
-          style={{ width:88, background:"transparent", border:`1px solid ${reps?T.accent+"66":T.borderDim}`,
-          borderRadius:6, color:reps?T.accent:T.muted, fontSize:12, fontWeight:600,
-          textAlign:"center", padding:"5px 3px", outline:"none",
-          fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+        {isWeek0 ? (
+          // První týden — tyrkysová, needitovatelné
+          <div style={{ width:88, fontSize:12, fontWeight:700, textAlign:"center", padding:"5px 3px",
+            color:T.accent, fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}>
+            {ex.rep}
+          </div>
+        ) : (
+          <input value={reps ?? ""} onChange={e=>onChange(ex.id,"reps",e.target.value,weekIdx)}
+            placeholder={placeholderReps}
+            style={{ width:88, background:"transparent",
+              border:`1px solid ${reps ? T.accent+"66" : T.borderDim}`,
+              borderRadius:6, color: reps ? T.accent : "#444",
+              fontSize:12, fontWeight:600, textAlign:"center", padding:"5px 3px",
+              outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+        )}
       </td>
-      <td style={{ ...cellStyle, color:"#555", fontSize:11 }}>{ex.cil || ""}</td>
+      <td style={{ ...cellStyle, color: ex.cil ? "#184b5e" : "#333", fontSize:11 }}>
+        {ex.cil || ""}
+      </td>
     </tr>
   );
 }
@@ -417,14 +448,14 @@ function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises
         <div style={{ overflowX:"auto" }}>
           {hasSilove && <>
             <SectionRow label="Silové cviky" timerSeconds={180}/>
-            <table style={{ width:"100%", borderCollapse:"collapse", minWidth:420 }}><THead/><tbody>
+            <table style={{ width:"100%", borderCollapse:"collapse", minWidth:420 }}><THead isSilove={true}/><tbody>
               {block.silove.map(ex => <SiloveRow key={ex.id} ex={ex} weekIdx={weekIdx} wd={data[ex.id]} onChange={onChange} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups} onSwapEx={onSwapEx ? (newEx)=>onSwapEx(block.id,"silove",ex.id,newEx) : null}/>)}
             </tbody></table>
             {hasHyper && <div style={{ height:1, background:`linear-gradient(90deg,transparent,${T.accent}44,transparent)`, margin:"4px 12px" }}/>}
           </>}
           {hasHyper && <>
             <SectionRow label="Hypertrofie" timerSeconds={90}/>
-            <table style={{ width:"100%", borderCollapse:"collapse", minWidth:420 }}><THead/><tbody>
+            <table style={{ width:"100%", borderCollapse:"collapse", minWidth:420 }}><THead isSilove={false}/><tbody>
               {block.hypertrofie.map(ex => <HypertrofieRow key={ex.id} ex={ex} weekIdx={weekIdx} wd={data[ex.id]} onChange={onChange} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups} onSwapEx={onSwapEx ? (newEx)=>onSwapEx(block.id,"hypertrofie",ex.id,newEx) : null}/>)}
             </tbody></table>
           </>}
