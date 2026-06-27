@@ -394,6 +394,21 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
     </tr>
   );
 }
+function HypertrofieRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx }) {
+  const weight = wd.weight ?? ex.vaha;
+  return (
+    <tr>
+      <DualExCell ex={ex} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups}
+        note={wd.note} noteB={wd.noteB}
+        onSaveNote={v=>onChange(ex.id,"note",v,weekIdx)}
+        onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
+        onSwapEx={onSwapEx}/>
+      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
+      <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.serie}</td>
+      <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.rep}</td>
+    </tr>
+  );
+}
 
 // ─── SECTION ROW ─────────────────────────────────────────────────────────────
 function SectionRow({ label, timerSeconds }) {
