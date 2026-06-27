@@ -346,25 +346,23 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
   const weight = wd.weight ?? ex.vaha;
   const reps = wd.reps ?? null;
 
-  // Vypočítej předvyplněná opakování pro daný týden
   function getPlaceholderReps() {
     const baseReps = (ex.rep || "").split(",").map(r => parseInt(r.trim())).filter(n => !isNaN(n));
     if (baseReps.length === 0) return ex.rep || "";
     if (weekIdx === 0) return ex.rep || "";
-    // Varianta B: začíná na více sériích (3,3,3,3,3) — každý týden -1 série až na 3, pak +1 opakování
-    const baseSerie = baseReps.length; // počet sérií = počet čísel v rep
+    const baseSerie = baseReps.length;
+    const baseRep = baseReps[0];
     if (baseSerie > 3) {
-      const targetSerie = Math.max(3, baseSerie - weekIdx);
-      const baseRep = baseReps[0];
-      const addedReps = Math.max(0, weekIdx - (baseSerie - 3));
-      return Array(targetSerie).fill(baseRep + addedReps).join(",");
+      const currentSerie = Math.max(3, baseSerie - weekIdx);
+      const currentRep = baseRep + weekIdx;
+      return Array(currentSerie).fill(currentRep).join(",");
     }
-    // Varianta A: standardní +1/týden
     return baseReps.map(r => r + weekIdx).join(",");
   }
 
   const placeholderReps = getPlaceholderReps();
   const isWeek0 = weekIdx === 0;
+  const cilColor = "#184b5e";
 
   return (
     <tr>
@@ -376,7 +374,6 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
       <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
       <td style={cellStyle}>
         {isWeek0 ? (
-          // První týden — tyrkysová, needitovatelné
           <div style={{ width:88, fontSize:12, fontWeight:700, textAlign:"center", padding:"5px 3px",
             color:T.accent, fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}>
             {ex.rep}
@@ -386,30 +383,14 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
             placeholder={placeholderReps}
             style={{ width:88, background:"transparent",
               border:`1px solid ${reps ? T.accent+"66" : T.borderDim}`,
-              borderRadius:6, color: reps ? T.accent : "#444",
-              fontSize:12, fontWeight:600, textAlign:"center", padding:"5px 3px",
+              borderRadius:6, color: reps ? T.accent : cilColor,
+              fontSize:12, fontWeight:700, textAlign:"center", padding:"5px 3px",
               outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
         )}
       </td>
-      <td style={{ ...cellStyle, color: ex.cil ? "#184b5e" : "#333", fontSize:11 }}>
+      <td style={{ ...cellStyle, color: ex.cil ? cilColor : "#333", fontSize:11, fontWeight:700 }}>
         {ex.cil || ""}
       </td>
-    </tr>
-  );
-}
-
-function HypertrofieRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx }) {
-  const weight = wd.weight ?? ex.vaha;
-  return (
-    <tr>
-      <DualExCell ex={ex} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups}
-        note={wd.note} noteB={wd.noteB}
-        onSaveNote={v=>onChange(ex.id,"note",v,weekIdx)}
-        onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
-        onSwapEx={onSwapEx}/>
-      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
-      <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.serie}</td>
-      <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.rep}</td>
     </tr>
   );
 }
