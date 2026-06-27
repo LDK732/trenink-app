@@ -399,7 +399,7 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
             outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
             )}
            </td>
-          <td style={{ ...cellStyle, color: ex.cil ? cilColor : "#333", fontSize:11, fontWeight:700 }}>
+          <td style={{ ...cellStyle, color: ex.cil ? cilColor : "#333", fontSize:11, fontWeight:400 }}>
         {ex.cil || ""}
       </td>
     </tr>
