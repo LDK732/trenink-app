@@ -311,8 +311,9 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
     <td style={{ padding:0, minWidth:175, background:T.bgRow }}>
       {showNoteA&&<NoteBubble note={note} onSave={v=>{onSaveNote&&onSaveNote(v);}} onClose={()=>setShowNoteA(false)}/>}
       {showNoteB&&<NoteBubble note={noteB} onSave={v=>{onSaveNoteB&&onSaveNoteB(v);}} onClose={()=>setShowNoteB(false)}/>}
-      <div style={{ border:`1px solid ${T.borderDim}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", gap:6 }}>
-      <div style={{ width:4, borderRadius:3, background:pA.color, flexShrink:0 }}/>
+      <div style={{ border:`1px solid ${T.borderDim}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px" }}>
+      <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+      <div style={{ width:4, height:14, borderRadius:3, background:pA.color, flexShrink:0 }}/>
       <div style={{ flex:1 }}>
         {/* Cvik A */}
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:4 }}>
@@ -324,6 +325,7 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
             {ex.refType!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(ex);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📖</button>}
             </div>
           </div>
+          </div>
         </div>
         {note&&<div style={{ color:T.accent,fontSize:9,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{note}</div>}
         {/* Divider */}
@@ -331,17 +333,20 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
           <div style={{ flex:1,height:1,background:T.borderDim }}/><span style={{ color:T.muted,fontSize:9,fontWeight:700 }}>nebo</span><div style={{ flex:1,height:1,background:T.borderDim }}/>
         </div>
         {/* Cvik B */}
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:4 }}>
-          <span style={{ color:T.white,fontSize:12,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-            {ex.refTypeB==="group"&&<span style={{ fontSize:9,marginRight:3 }}>📂</span>}{ex.nameB}
-          </span>
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+        <div style={{ width:4, height:14, borderRadius:3, background:PARTIE[ex.partieB||ex.partie]?.color||T.accent, flexShrink:0 }}/>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:4, flex:1 }}>
+        <span style={{ color:T.white,fontSize:12,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+        {ex.refTypeB==="group"&&<span style={{ fontSize:9,marginRight:3 }}>📂</span>}{ex.nameB}
+        </span>
           <div style={{ display:"flex",gap:2,flexShrink:0 }}>
             <button onClick={e=>{e.stopPropagation();setShowNoteB(true);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:noteB?T.accent:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📝</button>
             {ex.refTypeB!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(exB);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📖</button>}
           </div>
         </div>
+        </div>
+        </div>
         {noteB&&<div style={{ color:T.accent,fontSize:9,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{noteB}</div>}
-      </div>
     </td>
   );
 }
