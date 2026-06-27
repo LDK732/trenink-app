@@ -271,8 +271,8 @@ function THead() {
     <thead><tr>
       <th style={{ ...thStyle, textAlign:"left", paddingLeft:12 }}>Cvik</th>
       <th style={{ ...thStyle, width:72 }}>Váha</th>
-      <th style={{ ...thStyle, width:44 }}>Série</th>
       <th style={{ ...thStyle, width:100 }}>Opakování</th>
+      <th style={{ ...thStyle, width:72 }}>Cíl</th>
     </tr></thead>
   );
 }
@@ -335,7 +335,18 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
 
 function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx }) {
   const weight = wd.weight ?? ex.vaha;
-  const reps   = wd.reps   ?? (weekIdx===0 ? ex.rep : "");
+  const reps   = wd.reps ?? null;
+
+  // Vypočítej předvyplněná opakování pro daný týden
+  function getPlaceholderReps() {
+    if (weekIdx === 0) return ex.rep || "";
+    const baseReps = (ex.rep || "").split(",").map(r => parseInt(r.trim())).filter(n => !isNaN(n));
+    if (baseReps.length === 0) return ex.rep || "";
+    return baseReps.map(r => r + weekIdx).join(",");
+  }
+
+  const placeholderReps = getPlaceholderReps();
+
   return (
     <tr>
       <DualExCell ex={ex} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups}
@@ -344,10 +355,14 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
         onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
         onSwapEx={onSwapEx}/>
       <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
-      <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.serie}</td>
       <td style={cellStyle}>
-      <input value={reps} onChange={e=>onChange(ex.id,"reps",e.target.value,weekIdx)} placeholder="–" style={{ width:88, background:"transparent", border:`1px solid ${reps?T.accent+"66":T.borderDim}`, borderRadius:6, color:reps?T.accent:T.muted, fontSize:12, fontWeight:600, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
-    </td>
+        <input value={reps ?? ""} onChange={e=>onChange(ex.id,"reps",e.target.value,weekIdx)} placeholder={placeholderReps}
+          style={{ width:88, background:"transparent", border:`1px solid ${reps?T.accent+"66":T.borderDim}`,
+          borderRadius:6, color:reps?T.accent:T.muted, fontSize:12, fontWeight:600,
+          textAlign:"center", padding:"5px 3px", outline:"none",
+          fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+      </td>
+      <td style={{ ...cellStyle, color:"#555", fontSize:11 }}>{ex.cil || ""}</td>
     </tr>
   );
 }
@@ -977,9 +992,8 @@ function PlanEditor({ plan, setPlan, exercises, groups, onBack }) {
                     <table style={{ width:"100%",borderCollapse:"collapse",minWidth:360 }}>
                       <thead><tr>
                         <th style={{ ...thStyle,textAlign:"left",paddingLeft:12 }}>Cvik / Skupina</th>
-                        <th style={{ ...thStyle,width:44 }}>Série</th>
-                        <th style={{ ...thStyle,width:90 }}>Opak.</th>
-                        <th style={{ ...thStyle,width:70 }}>Váha</th>
+                        {sec==="silove" ? <th style={{ ...thStyle,width:90 }}>Opak.</th> : <><th style={{ ...thStyle,width:44 }}>Série</th><th style={{ ...thStyle,width:90 }}>Opak.</th></>}
+                      <th style={{ ...thStyle,width:70 }}>{sec==="silove"?"Cíl":"Váha"}</th>
                       </tr></thead>
                       <tbody>
                         {block[sec].map((row,ri)=>{
@@ -1006,9 +1020,9 @@ function PlanEditor({ plan, setPlan, exercises, groups, onBack }) {
                                   </div>
                                 ):row.name?(<button onClick={()=>setPicker({blockId:block.id,section:sec,rowIdx:ri,slot:"B"})} style={{ width:"100%",background:"transparent",border:`1px dashed ${T.borderDim}`,color:T.muted,borderRadius:5,padding:"3px 6px",fontSize:9,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:2,textAlign:"left" }}>+ přidat druhý cvik</button>):null}
                               </td>
-                              <td style={cellStyle}><input defaultValue={row.serie||""} placeholder="3x" style={{ width:36,background:"transparent",border:`1px solid ${T.borderDim}`,borderRadius:5,color:T.white,fontSize:12,textAlign:"center",padding:"4px 2px",outline:"none",fontFamily:"inherit" }} onChange={e=>{setPlan(prev=>{const p2=JSON.parse(JSON.stringify(prev));p2.blocks.find(b=>b.id===block.id)[sec][ri].serie=e.target.value;return p2;});}}/></td>
-                              <td style={cellStyle}><input defaultValue={row.rep||""} placeholder="8-12" style={{ width:76,background:"transparent",border:`1px solid ${T.borderDim}`,borderRadius:5,color:T.white,fontSize:12,textAlign:"center",padding:"4px 2px",outline:"none",fontFamily:"'JetBrains Mono',monospace" }} onChange={e=>{setPlan(prev=>{const p2=JSON.parse(JSON.stringify(prev));p2.blocks.find(b=>b.id===block.id)[sec][ri].rep=e.target.value;return p2;});}}/></td>
-                              <td style={cellStyle}><input defaultValue={row.vaha||""} placeholder="—" style={{ width:56,background:"transparent",border:`1px solid ${T.borderDim}`,borderRadius:5,color:T.white,fontSize:12,textAlign:"center",padding:"4px 2px",outline:"none",fontFamily:"'JetBrains Mono',monospace" }} onChange={e=>{setPlan(prev=>{const p2=JSON.parse(JSON.stringify(prev));p2.blocks.find(b=>b.id===block.id)[sec][ri].vaha=e.target.value;return p2;});}}/></td>
+                              {sec==="silove" ? null : <td style={cellStyle}><input defaultValue={row.serie||""} placeholder="3x" style={{ width:36,background:"transparent",border:`1px solid ${T.borderDim}`,borderRadius:5,color:T.white,fontSize:12,textAlign:"center",padding:"4px 2px",outline:"none",fontFamily:"inherit" }} onChange={e=>{setPlan(prev=>{const p2=JSON.parse(JSON.stringify(prev));p2.blocks.find(b=>b.id===block.id)[sec][ri].serie=e.target.value;return p2;})}}/></td>}
+                           <td style={cellStyle}><input defaultValue={row.rep||""} placeholder={sec==="silove"?"5,5,5":"8-12"} style={{ width:76,background:"transparent",border:`1px solid ${T.borderDim}`,borderRadius:5,color:T.white,fontSize:12,textAlign:"center",padding:"4px 2px",outline:"none",fontFamily:"'JetBrains Mono',monospace" }} onChange={e=>{setPlan(prev=>{const p2=JSON.parse(JSON.stringify(prev));p2.blocks.find(b=>b.id===block.id)[sec][ri].rep=e.target.value;return p2;})}}/></td>
+                           <td style={cellStyle}><input defaultValue={sec==="silove"?(row.cil||""):(row.vaha||"")} placeholder={sec==="silove"?"10,10,10":"—"} style={{ width:56,background:"transparent",border:`1px solid ${T.borderDim}`,borderRadius:5,color:T.white,fontSize:12,textAlign:"center",padding:"4px 2px",outline:"none",fontFamily:"'JetBrains Mono',monospace" }} onChange={e=>{setPlan(prev=>{const p2=JSON.parse(JSON.stringify(prev));const field=sec==="silove"?"cil":"vaha";p2.blocks.find(b=>b.id===block.id)[sec][ri][field]=e.target.value;return p2;})}}/></td>
                             </tr>
                           );
                         })}
