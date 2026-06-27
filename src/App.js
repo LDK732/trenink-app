@@ -362,7 +362,7 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
 
   const placeholderReps = getPlaceholderReps();
   const isWeek0 = weekIdx === 0;
-  const cilColor = "#184b5e";
+  const cilColor = "#2e9faf";
 
   return (
     <tr>
@@ -379,16 +379,27 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
             {ex.rep}
           </div>
         ) : (
-          <input value={reps ?? ""} onChange={e=>onChange(ex.id,"reps",e.target.value,weekIdx)}
-            placeholder={placeholderReps}
+          <input 
+            value={reps !== null ? reps : placeholderReps}
+            onChange={e => {
+            const val = e.target.value;
+         // Pokud klient smaže vše, vrátíme null (placeholder)
+            if (val === placeholderReps || val === "") {
+            onChange(ex.id,"reps", val === "" ? null : val, weekIdx);
+            } else {
+            onChange(ex.id,"reps",val,weekIdx);
+            }
+            }}
+            onFocus={e => { if (e.target.value === placeholderReps) e.target.select(); }}
             style={{ width:88, background:"transparent",
-              border:`1px solid ${reps ? T.accent+"66" : T.borderDim}`,
-              borderRadius:6, color: reps ? T.accent : cilColor,
-              fontSize:12, fontWeight:700, textAlign:"center", padding:"5px 3px",
-              outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
-        )}
-      </td>
-      <td style={{ ...cellStyle, color: ex.cil ? cilColor : "#333", fontSize:11, fontWeight:700 }}>
+            border:`1px solid ${reps !== null ? T.accent+"66" : T.borderDim}`,
+            borderRadius:6, color: reps !== null ? T.accent : "#184b5e",
+            fontSize:12, fontWeight: reps !== null ? 700 : 400,
+            textAlign:"center", padding:"5px 3px",
+            outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+            )}
+           </td>
+          <td style={{ ...cellStyle, color: ex.cil ? cilColor : "#333", fontSize:11, fontWeight:700 }}>
         {ex.cil || ""}
       </td>
     </tr>
