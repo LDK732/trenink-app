@@ -74,8 +74,8 @@ function RestTimer({ seconds }) {
 
   return (
     <button onClick={handleClick} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:4, padding:0, fontFamily:"inherit" }}>
-      <span style={{ color:T.accent, fontSize:11 }}>▶</span>
-      <span style={{ color:T.accent, fontSize:13, fontWeight:800, fontFamily:"'JetBrains Mono',monospace", letterSpacing:0.5, minWidth:36 }}>{mins}:{secs}</span>
+      <span style={{ color:T.accent, fontSize:15 }}>▶</span>
+      <span style={{ color:T.accent, fontSize:14, fontWeight:800, fontFamily:"'JetBrains Mono',monospace", letterSpacing:0.5, minWidth:36 }}>{mins}:{secs}</span>
     </button>
   );
 }
@@ -244,7 +244,8 @@ function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onS
       {showNote && <NoteBubble note={note} onSave={onSaveNote||(() =>{})} onClose={()=>setShowNote(false)}/>}
       <td onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchEnd={cancelPress}
         style={{ padding:0, minWidth:175, cursor:"pointer", userSelect:"none", background:T.bgRow }}>
-        <div style={{ border:`1.5px solid ${p.color}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?p.color+"18":"rgba(0,0,0,0.2)", transition:"background 0.15s", boxShadow:`0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 ${p.color}18` }}>
+        <div style={{ border:`1px solid ${T.borderDim}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.2)", transition:"background 0.15s" }}>
+        <div style={{ width:4, height:14, borderRadius:3, background:p.color, flexShrink:0, marginRight:4 }}/>
           <div style={{ flex:1,minWidth:0 }}>
             <div style={{ display:"flex",alignItems:"center",gap:4 }}>
               {isGroup&&<span style={{ fontSize:9,flexShrink:0 }}>📂</span>}
@@ -310,7 +311,9 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
     <td style={{ padding:0, minWidth:175, background:T.bgRow }}>
       {showNoteA&&<NoteBubble note={note} onSave={v=>{onSaveNote&&onSaveNote(v);}} onClose={()=>setShowNoteA(false)}/>}
       {showNoteB&&<NoteBubble note={noteB} onSave={v=>{onSaveNoteB&&onSaveNoteB(v);}} onClose={()=>setShowNoteB(false)}/>}
-      <div style={{ border:`1.5px solid ${pA.color}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px" }}>
+      <div style={{ border:`1px solid ${T.borderDim}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", gap:6 }}>
+      <div style={{ width:4, borderRadius:3, background:pA.color, flexShrink:0 }}/>
+      <div style={{ flex:1 }}>
         {/* Cvik A */}
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:4 }}>
           <span style={{ color:T.white,fontSize:12,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -319,6 +322,7 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
           <div style={{ display:"flex",gap:2,flexShrink:0 }}>
             <button onClick={e=>{e.stopPropagation();setShowNoteA(true);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:note?T.accent:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📝</button>
             {ex.refType!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(ex);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📖</button>}
+            </div>
           </div>
         </div>
         {note&&<div style={{ color:T.accent,fontSize:9,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{note}</div>}
@@ -427,7 +431,7 @@ function SectionRow({ label, timerSeconds }) {
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px 5px", background:`linear-gradient(90deg, rgba(46,159,175,0.08) 0%, rgba(26,26,26,0.9) 100%)`, borderBottom:`1px solid rgba(46,159,175,0.1)` }}>
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ width:7, height:7, borderRadius:2, background:T.accentBtn, display:"inline-block", flexShrink:0, boxShadow:`0 0 6px ${T.accent}88` }}/>
-        <span style={{ color:T.accent, fontSize:10, fontWeight:800, letterSpacing:2, textTransform:"uppercase" }}>{label}</span>
+        <span style={{ color:T.accent, fontSize:11, fontWeight:800, letterSpacing:4, textTransform:"uppercase" }}>{label}</span>
       </div>
       <RestTimer seconds={timerSeconds}/>
     </div>
