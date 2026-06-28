@@ -180,7 +180,7 @@ function GroupPickerModal({ groupId, groupName, exercises, groups, onSwapEx, onC
                 </div>
                 <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                   {onSwapEx&&<button onClick={()=>{ onSwapEx(ex); onClose(); }} style={{ background:T.accentBtn+"22",border:`1px solid ${T.accent}44`,borderRadius:6,color:T.accent,fontSize:10,fontWeight:700,cursor:"pointer",padding:"3px 8px",fontFamily:"inherit" }}>Vyměnit</button>}
-                  <button onClick={()=>setDetailEx(ex)} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:5,color:T.muted,fontSize:11,cursor:"pointer",padding:"3px 6px" }}>📖</button>
+                  <button onClick={()=>setDetailEx(ex)} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:5,color:T.muted,fontSize:11,cursor:"pointer",padding:"3px 6px" }}>👁️</button>
                 </div>
               </div>
             );
@@ -242,10 +242,9 @@ function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onS
         <GroupPickerModal groupId={groupId} groupName={group?.label||ex.name} exercises={exercises||[]} groups={groups||[]} onSwapEx={onSwapEx||null} onClose={()=>setShowGroup(false)}/>
       )}
       {showNote && <NoteBubble note={note} onSave={onSaveNote||(() =>{})} onClose={()=>setShowNote(false)}/>}
-      <td onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchEnd={cancelPress}
+      <td onDoubleClick={() => { if (groupId) setShowGroup(true); else if (!isGroup) onOpenDetail(ex); }}
         style={{ padding:0, minWidth:175, cursor:"pointer", userSelect:"none", background:T.bgRow }}>
-        <div style={{ border:`1px solid ${T.borderDim}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.2)", transition:"background 0.15s" }}>
-        <div style={{ width:4, height:14, borderRadius:3, background:p.color, flexShrink:0, marginRight:4 }}/>
+        <div style={{ border:`1px solid ${p.color}66`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?p.color+"10":"rgba(0,0,0,0.2)", transition:"background 0.15s" }}>
           <div style={{ flex:1,minWidth:0 }}>
             <div style={{ display:"flex",alignItems:"center",gap:4 }}>
               {isGroup&&<span style={{ fontSize:9,flexShrink:0 }}>📂</span>}
@@ -255,7 +254,7 @@ function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onS
           </div>
           <div style={{ display:"flex",gap:3,flexShrink:0 }}>
             <button onClick={e=>{ e.stopPropagation(); setShowNote(true); }} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:note?T.accent:T.muted,fontSize:10,cursor:"pointer",padding:"2px 4px",lineHeight:1 }} title="Poznámka">📝</button>
-            {!isGroup&&<button onClick={e=>{ e.stopPropagation(); onOpenDetail(ex); }} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:10,cursor:"pointer",padding:"2px 4px",lineHeight:1,fontWeight:700 }} title="Detail cviku">📖</button>}
+            {!isGroup&&<button onClick={e=>{ e.stopPropagation(); onOpenDetail(ex); }} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:10,cursor:"pointer",padding:"2px 4px",lineHeight:1,fontWeight:700 }} title="Detail cviku">👁️</button>}
           </div>
         </div>
       </td>
@@ -290,7 +289,7 @@ function THead({ isSilove }) {
 function WeightInput({ value, onChange }) {
   return (
     <td style={cellStyle}>
-      <input value={value} onChange={onChange} style={{ width:58, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:13, fontWeight:700, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+      <input value={value} onChange={onChange} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:13, fontWeight:700, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
     </td>
   );
 }
@@ -311,9 +310,8 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
     <td style={{ padding:0, minWidth:175, background:T.bgRow }}>
       {showNoteA&&<NoteBubble note={note} onSave={v=>{onSaveNote&&onSaveNote(v);}} onClose={()=>setShowNoteA(false)}/>}
       {showNoteB&&<NoteBubble note={noteB} onSave={v=>{onSaveNoteB&&onSaveNoteB(v);}} onClose={()=>setShowNoteB(false)}/>}
-      <div style={{ border:`1px solid ${T.borderDim}`, borderRadius:5, margin:"4px 6px", padding:"4px 6px" }}>
+      <div style={{ border:`1px solid ${pA.color}44`, borderRadius:5, margin:"4px 6px", padding:"4px 6px" }}>
       <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-      <div style={{ width:4, height:14, borderRadius:3, background:pA.color, flexShrink:0 }}/>
       <div style={{ flex:1 }}>
         {/* Cvik A */}
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:4 }}>
@@ -322,7 +320,7 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
           </span>
           <div style={{ display:"flex",gap:2,flexShrink:0 }}>
             <button onClick={e=>{e.stopPropagation();setShowNoteA(true);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:note?T.accent:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📝</button>
-            {ex.refType!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(ex);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📖</button>}
+            {ex.refType!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(ex);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>👁️</button>}
             </div>
           </div>
           </div>
@@ -334,14 +332,13 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
         </div>
         {/* Cvik B */}
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-        <div style={{ width:4, height:14, borderRadius:3, background:PARTIE[ex.partieB||ex.partie]?.color||T.accent, flexShrink:0 }}/>
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:4, flex:1 }}>
         <span style={{ color:T.white,fontSize:12,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
         {ex.refTypeB==="group"&&<span style={{ fontSize:9,marginRight:3 }}>📂</span>}{ex.nameB}
         </span>
           <div style={{ display:"flex",gap:2,flexShrink:0 }}>
             <button onClick={e=>{e.stopPropagation();setShowNoteB(true);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:noteB?T.accent:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📝</button>
-            {ex.refTypeB!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(exB);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>📖</button>}
+            {ex.refTypeB!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(exB);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>👁️</button>}
           </div>
         </div>
         </div>
@@ -433,12 +430,16 @@ function HypertrofieRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises,
 // ─── SECTION ROW ─────────────────────────────────────────────────────────────
 function SectionRow({ label, timerSeconds }) {
   return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px 5px", background:`linear-gradient(90deg, rgba(46,159,175,0.08) 0%, rgba(26,26,26,0.9) 100%)`, borderBottom:`1px solid rgba(46,159,175,0.1)` }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-        <span style={{ width:7, height:7, borderRadius:2, background:T.accentBtn, display:"inline-block", flexShrink:0, boxShadow:`0 0 6px ${T.accent}88` }}/>
-        <span style={{ color:T.accent, fontSize:11, fontWeight:800, letterSpacing:4, textTransform:"uppercase" }}>{label}</span>
+    <div>
+      <div style={{ height:1, background:"#184b5e", margin:"0 0" }}/>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px 5px", background:`linear-gradient(90deg, rgba(46,159,175,0.08) 0%, rgba(26,26,26,0.9) 100%)`, borderBottom:`1px solid rgba(46,159,175,0.1)` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ width:7, height:7, borderRadius:2, background:T.accentBtn, display:"inline-block", flexShrink:0, boxShadow:`0 0 6px ${T.accent}88` }}/>
+          <span style={{ color:T.accent, fontSize:11, fontWeight:800, letterSpacing:4, textTransform:"uppercase" }}>{label}</span>
+        </div>
+        <RestTimer seconds={timerSeconds}/>
       </div>
-      <RestTimer seconds={timerSeconds}/>
+      <div style={{ height:1, background:"#184b5e", margin:"0 0" }}/>
     </div>
   );
 }
@@ -680,7 +681,7 @@ function handleChange(exId, field, val, wIdx) {
       ? exData[`block_open_${block.id}`] !== false 
       : false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
       </div>
-      <div style={{ padding:"6px 18px 0", color:T.muted, fontSize:10, textAlign:"center" }}>💡 📖 detail · 📝 poznámka · Podržením názvu = cviky skupiny</div>
+      <div style={{ padding:"6px 18px 0", color:T.muted, fontSize:10, textAlign:"center" }}> 📝 poznámka / 👁️ detail / 👇Dvojklik na název = skupina cviků</div>
     </div>
   );
 }
