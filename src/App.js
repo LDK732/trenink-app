@@ -244,7 +244,7 @@ function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onS
       {showNote && <NoteBubble note={note} onSave={onSaveNote||(() =>{})} onClose={()=>setShowNote(false)}/>}
       <td onDoubleClick={() => { if (groupId) setShowGroup(true); else if (!isGroup) onOpenDetail(ex); }}
         style={{ padding:0, minWidth:175, cursor:"pointer", userSelect:"none", background:T.bgRow }}>
-        <div style={{ border:`1px solid ${p.color}66`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?p.color+"10":"rgba(0,0,0,0.2)", transition:"background 0.15s" }}>
+        <div style={{ border:`1px solid ${p.color}70`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?p.color+"10":"rgba(0,0,0,0.2)", transition:"background 0.15s" }}>
           <div style={{ flex:1,minWidth:0 }}>
             <div style={{ display:"flex",alignItems:"center",gap:4 }}>
               {isGroup&&<span style={{ fontSize:9,flexShrink:0 }}>📂</span>}
