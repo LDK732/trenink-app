@@ -244,7 +244,7 @@ function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onS
       {showNote && <NoteBubble note={note} onSave={onSaveNote||(() =>{})} onClose={()=>setShowNote(false)}/>}
       <td onDoubleClick={() => { if (groupId) setShowGroup(true); else if (!isGroup) onOpenDetail(ex); }}
         style={{ padding:0, minWidth:175, cursor:"pointer", userSelect:"none", background:T.bgRow }}>
-        <div style={{ border:`1px solid ${p.color}70`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?p.color+"10":"rgba(0,0,0,0.2)", transition:"background 0.15s" }}>
+        <div style={{ border:`1px solid ${p.color}88`, borderRadius:5, margin:"4px 6px", padding:"4px 6px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:4, background:pressing?p.color+"10":"rgba(0,0,0,0.2)", transition:"background 0.15s" }}>
           <div style={{ flex:1,minWidth:0 }}>
             <div style={{ display:"flex",alignItems:"center",gap:4 }}>
               {isGroup&&<span style={{ fontSize:9,flexShrink:0 }}>📂</span>}
@@ -310,7 +310,7 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
     <td style={{ padding:0, minWidth:175, background:T.bgRow }}>
       {showNoteA&&<NoteBubble note={note} onSave={v=>{onSaveNote&&onSaveNote(v);}} onClose={()=>setShowNoteA(false)}/>}
       {showNoteB&&<NoteBubble note={noteB} onSave={v=>{onSaveNoteB&&onSaveNoteB(v);}} onClose={()=>setShowNoteB(false)}/>}
-      <div style={{ border:`1px solid ${pA.color}44`, borderRadius:5, margin:"4px 6px", padding:"4px 6px" }}>
+      <div style={{ border:`1px solid ${pA.color}88`, borderRadius:5, margin:"4px 6px", padding:"4px 6px" }}>
       <div style={{ display:"flex", gap:6, alignItems:"center" }}>
       <div style={{ flex:1 }}>
         {/* Cvik A */}
@@ -341,9 +341,9 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
             {ex.refTypeB!=="group"&&<button onClick={e=>{e.stopPropagation();onOpenDetail(exB);}} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:4,color:T.muted,fontSize:9,cursor:"pointer",padding:"1px 3px" }}>👁️</button>}
           </div>
         </div>
-        </div>
-        </div>
         {noteB&&<div style={{ color:T.accent,fontSize:9,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{noteB}</div>}
+        </div>
+        </div>
     </td>
   );
 }
@@ -430,8 +430,8 @@ function HypertrofieRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises,
 // ─── SECTION ROW ─────────────────────────────────────────────────────────────
 function SectionRow({ label, timerSeconds }) {
   return (
-    <div>
-      <div style={{ height:1, background:"#184b5e", margin:"0 0" }}/>
+    <div style={{ borderLeft:`1px solid #184b5e`, borderRight:`1px solid #184b5e` }}>
+      <div style={{ height:1, background:"#184b5e" }}/>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px 5px", background:`linear-gradient(90deg, rgba(46,159,175,0.08) 0%, rgba(26,26,26,0.9) 100%)`, borderBottom:`1px solid rgba(46,159,175,0.1)` }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <span style={{ width:7, height:7, borderRadius:2, background:T.accentBtn, display:"inline-block", flexShrink:0, boxShadow:`0 0 6px ${T.accent}88` }}/>
@@ -439,7 +439,7 @@ function SectionRow({ label, timerSeconds }) {
         </div>
         <RestTimer seconds={timerSeconds}/>
       </div>
-      <div style={{ height:1, background:"#184b5e", margin:"0 0" }}/>
+      <div style={{ height:1, background:"#184b5e" }}/>
     </div>
   );
 }
