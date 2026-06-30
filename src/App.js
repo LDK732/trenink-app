@@ -1097,6 +1097,14 @@ const BLOCK_TYPES = [
   { id:"silovy", label:"Silový", desc:"Pouze silové cviky" },
   { id:"hypertrofie", label:"Hypertrofie", desc:"Pouze hypertrofie" },
 ];
+const SPLIT_TYPES = [
+  { id:"fullbody", label:"Full Body" },
+  { id:"upper", label:"Upper" },
+  { id:"lower", label:"Lower" },
+  { id:"push", label:"Push" },
+  { id:"pull", label:"Pull" },
+  { id:"legs", label:"Legs" },
+];
 
 function PlanWizard({ onSave, onCancel }) {
   const [step, setStep] = useState(1);
@@ -1115,7 +1123,7 @@ function PlanWizard({ onSave, onCancel }) {
     return {
       id:"t"+Date.now(), name, desc, weeks, difficulty:"Středně pokročilý", locked,
       blocks: blocks.map((b,i) => ({
-        id:"b"+Date.now()+i, label:b.label, day:b.day, type:b.type,
+        id:"b"+Date.now()+i, label:b.label, day:b.day, type:b.type, split:b.split||[],
         silove: Array.from({length:b.type==="hypertrofie"?0:b.siloveCount}, emptyEx),
         hypertrofie: Array.from({length:b.type==="silovy"?0:b.hypertrofieCount}, emptyEx),
       }))
@@ -1180,6 +1188,14 @@ function PlanWizard({ onSave, onCancel }) {
             <div style={{ display:"flex",gap:6,marginBottom:12,flexWrap:"wrap" }}>
               {BLOCK_TYPES.map(bt=><button key={bt.id} onClick={()=>updateBlock(idx,"type",bt.id)} style={{ background:b.type===bt.id?T.accent+"22":T.bg, border:`1.5px solid ${b.type===bt.id?T.accent:T.borderDim}`, borderRadius:9, padding:"7px 12px", fontSize:11, fontWeight:700, color:b.type===bt.id?T.accent:T.muted, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}><div>{bt.label}</div><div style={{ fontSize:9,fontWeight:400,opacity:0.7,marginTop:1 }}>{bt.desc}</div></button>)}
             </div>
+            <FieldLabel>Split</FieldLabel>
+            <div style={{ display:"flex",gap:5,flexWrap:"wrap",marginBottom:12 }}>
+            {SPLIT_TYPES.map(st=>{
+            const selected=(b.split||[]).includes(st.id);
+            return <button key={st.id} onClick={()=>updateBlock(idx,"split",selected?(b.split||[]).filter(s=>s!==st.id):[...(b.split||[]),st.id])}
+            style={{ background:selected?T.accent+"22":T.bg, border:`1px solid ${selected?T.accent:T.borderDim}`, borderRadius:7, padding:"4px 10px", fontSize:10, fontWeight:700, color:selected?T.accent:T.muted, cursor:"pointer", fontFamily:"inherit" }}>{st.label}</button>;
+            })}
+           </div>
             {b.type!=="hypertrofie"&&(
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
                 <span style={{ color:T.muted,fontSize:12 }}>Silové cviky</span>
@@ -1316,7 +1332,10 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
                   <div><div style={{ color:T.white,fontWeight:700,fontSize:14 }}>{block.label}</div><div style={{ color:T.muted,fontSize:11 }}>{block.day}</div></div>
                 </div>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
-                  {allEx.slice(0,6).map((ex,i)=>{ const p=PARTIE[ex.partie]||{color:T.accent}; return <span key={i} style={{ background:p.color+"18",color:p.color,border:`1px solid ${p.color}44`,fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6 }}>{ex.refType==="group"?"📂 ":""}{ex.name}</span>; })}
+                {(block.split||[]).length>0
+                ? (block.split||[]).map((s,i)=><span key={i} style={{ background:T.accent+"18",color:T.accent,border:`1px solid ${T.accent}44`,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6 }}>{SPLIT_TYPES.find(st=>st.id===s)?.label||s}</span>)
+                : allEx.slice(0,6).map((ex,i)=>{ const p=PARTIE[ex.partie]||{color:T.accent}; return <span key={i} style={{ background:p.color+"18",color:p.color,border:`1px solid ${p.color}44`,fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6 }}>{ex.refType==="group"?"📂 ":""}{ex.name}</span>; })
+                }
                   {allEx.length>6&&<span style={{ color:T.muted,fontSize:10,padding:"3px 4px" }}>+{allEx.length-6} dalších</span>}
                   {allEx.length===0&&<span style={{ color:T.muted,fontSize:11 }}>Zatím bez cviků</span>}
                 </div>
@@ -1373,7 +1392,6 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
                     {typeLabel&&<span style={{ background:typeColor+"18",color:typeColor,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,border:`1px solid ${typeColor}44` }}>{typeLabel}</span>}
                     {tmpl.locked&&<span style={{ background:"rgba(255,255,255,0.06)",color:T.muted,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,border:`1px solid rgba(255,255,255,0.12)` }}>🔒 Zamčený</span>}
                   </div>
-                  <div style={{ color:T.muted,fontSize:12,lineHeight:1.4 }}>{tmpl.desc}</div>
                 </div>
               </div>
               <div style={{ display:"flex",gap:14,marginBottom:12 }}>
