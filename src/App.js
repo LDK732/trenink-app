@@ -1333,10 +1333,13 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
                 </div>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
                 {(block.split||[]).length>0
-                ? (block.split||[]).map((s,i)=><span key={i} style={{ background:T.accent+"18",color:T.accent,border:`1px solid ${T.accent}44`,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6 }}>{SPLIT_TYPES.find(st=>st.id===s)?.label||s}</span>)
+                ? (()=>{ const bTypes=[...new Set((tmpl.blocks||[]).map(b=>b.type).filter(Boolean))]; const bTypeLabel=bTypes.includes("kombinace")||bTypes.length>1?"Kombinovaný":bTypes.includes("silovy")?"Silový":bTypes.includes("hypertrofie")?"Hypertrofie":""; const bColor=bTypeLabel==="Silový"?"#FF9500":bTypeLabel==="Hypertrofie"?"#8e0597":T.accent; return (block.split||[]).map((s,i)=><span key={i} style={{ background:bColor+"18",color:bColor,border:`1px solid ${bColor}44`,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6 }}>{SPLIT_TYPES.find(st=>st.id===s)?.label||s}</span>); })()
                 : allEx.slice(0,6).map((ex,i)=>{ const p=PARTIE[ex.partie]||{color:T.accent}; return <span key={i} style={{ background:p.color+"18",color:p.color,border:`1px solid ${p.color}44`,fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6 }}>{ex.refType==="group"?"📂 ":""}{ex.name}</span>; })
                 }
-                  {allEx.length>6&&<span style={{ color:T.muted,fontSize:10,padding:"3px 4px" }}>+{allEx.length-6} dalších</span>}
+                <div style={{ display:"flex", gap:6, marginTop:6 }}>
+               {(block.silove||[]).filter(e=>e.name).length>0&&<span style={{ background:"#FF9500"+"18",color:"#FF9500",border:`1px solid ${"#FF9500"}44`,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6 }}>Silové {block.silove.filter(e=>e.name).length}</span>}
+               {(block.hypertrofie||[]).filter(e=>e.name).length>0&&<span style={{ background:"#8e0597"+"18",color:"#8e0597",border:`1px solid ${"#8e0597"}44`,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6 }}>Hypertrofie {block.hypertrofie.filter(e=>e.name).length}</span>}
+               </div>
                   {allEx.length===0&&<span style={{ color:T.muted,fontSize:11 }}>Zatím bez cviků</span>}
                 </div>
               </Card>
@@ -1381,7 +1384,7 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
           const isActive=activeInstance?.templateId===tmpl.id;
           const types = [...new Set((tmpl.blocks||[]).map(b=>b.type).filter(Boolean))];
           const typeLabel = types.includes("kombinace")||types.length>1?"Kombinovaný":types.includes("silovy")?"Silový":types.includes("hypertrofie")?"Hypertrofie":"";
-          const typeColor = typeLabel==="Silový"?"#FF9500":typeLabel==="Hypertrofie"?"#00CC00":T.accent;
+          const typeColor = typeLabel==="Silový"?"#FF9500":typeLabel==="Hypertrofie"?"#a506af":T.accent;
           return (
             <Card key={tmpl.id} style={{ padding:"16px" }}>
               <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8 }}>
@@ -1486,7 +1489,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
             const alreadyAssigned = (assignmentPlanIds[assigningClient.id]||[]).includes(tmpl.id);
             const types = [...new Set((tmpl.blocks||[]).map(b=>b.type).filter(Boolean))];
             const typeLabel = types.includes("kombinace")||types.length>1?"Kombinovaný":types.includes("silovy")?"Silový":types.includes("hypertrofie")?"Hypertrofie":"";
-            const typeColor = typeLabel==="Silový"?"#FF9500":typeLabel==="Hypertrofie"?"#00CC00":T.accent;
+            const typeColor = typeLabel==="Silový"?"#FF9500":typeLabel==="Hypertrofie"?"#a506af":T.accent;
             return (
               <Card key={tmpl.id} style={{ padding:"14px",opacity:alreadyAssigned?0.5:1 }}>
                 <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8 }}>
