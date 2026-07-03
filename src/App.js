@@ -31,7 +31,7 @@ const PARTIE = {
   prsa:    { color:"#0099FF", label:"Hrudník" },
   zada:    { color:"#FF0000", label:"Záda"    },
   nohy:    { color:"#00CC00", label:"Nohy"    },
-  ramena:  { color:"#00FFFF", label:"Ramena"  },
+  ramena:  { color:"#9BFFFD", label:"Ramena"  },
   biceps:  { color:"#FF00FF", label:"Biceps"  },
   triceps: { color:"#CC9900", label:"Triceps" },
   core:    { color:"#FFFF00", label:"Břicho"  },
