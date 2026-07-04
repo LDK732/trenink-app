@@ -1231,6 +1231,7 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
   const [editing,    setEditing]    = useState(null);
   const [wizard,     setWizard]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [confirmActivate, setConfirmActivate] = useState(null);
   const [planFilter, setPlanFilter] = useState(null); // null | "kombinace" | "silovy" | "hypertrofie"
 
   // Filter library by block type
@@ -1349,8 +1350,17 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
             ?<div style={{ background:"rgba(46,159,175,0.1)",border:`1px solid ${T.accent}44`,borderRadius:10,padding:"11px 16px",textAlign:"center",color:T.accent,fontSize:13,fontWeight:700 }}>✓ Tento plán je aktuálně aktivní</div>
             : tmpl.locked && !isTrainer && !(suggestedPlans?.assignedPlanIds||[]).includes(tmpl.id)
             ? <div style={{ background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.1)`,borderRadius:10,padding:"11px 16px",textAlign:"center",color:T.muted,fontSize:13,fontWeight:600 }}>🔒 Tento plán je zamčený – vyžaduje přidělení od trenéra</div>
-            : <Btn full onClick={()=>{onActivate(tmpl.id);setSelected(null);}}>Aktivovat plán →</Btn>
+            : <Btn full onClick={()=>setConfirmActivate(tmpl.id)}>Aktivovat plán →</Btn>
           }
+          {confirmActivate===tmpl.id&&(
+          <div style={{ margin:"10px 18px 0",background:"#1a2a1a",border:`1px solid ${T.accent}44`,borderRadius:10,padding:"12px 14px" }}>
+          <div style={{ color:T.white,fontSize:13,fontWeight:600,marginBottom:10 }}>Aktivovat plán „{tmpl.name}"? Aktuální trénink bude přesunut do historie.</div>
+          <div style={{ display:"flex",gap:8 }}>
+          <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setConfirmActivate(null)}>Zrušit</Btn>
+          <Btn small style={{ flex:1 }} onClick={()=>{onActivate(tmpl.id);setSelected(null);setConfirmActivate(null);}}>Aktivovat</Btn>
+    </div>
+  </div>
+)}
         </div>
       </div>
     );
@@ -1816,6 +1826,7 @@ function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlan
   const [prs,setPrs] = useState([]);
   const [addingPr,setAddingPr] = useState(false);
   const [newPr,setNewPr]       = useState({name:"",value:"",partie:undefined});
+  const [confirmDelHistory, setConfirmDelHistory] = useState(null);
 
   const BODY_METRICS = [
     { key:"weight", label:"Hmotnost",       unit:"kg", color:"#2E9FAF" },
@@ -1993,12 +2004,25 @@ function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlan
           {history.length>0&&<div style={{ color:T.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8 }}>Historie</div>}
           {history.map((h,i)=>(
             <Card key={i} style={{ padding:"16px",marginBottom:10 }}>
-              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10 }}>
-                <div><div style={{ color:T.white,fontWeight:700,fontSize:14 }}>{h.name}</div><div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{h.date}</div></div>
-                <span style={{ background:T.bgCard2,color:T.muted,fontSize:10,padding:"2px 8px",borderRadius:20,border:`1px solid ${T.borderDim}` }}>Dokončeno</span>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10 }}>
+              <div><div style={{ color:T.white,fontWeight:700,fontSize:14 }}>{h.name}</div><div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{h.date}</div></div>
+              <span style={{ background:T.bgCard2,color:T.muted,fontSize:10,padding:"2px 8px",borderRadius:20,border:`1px solid ${T.borderDim}` }}>Dokončeno</span>
+            </div>
+             {confirmDelHistory===i ? (
+              <div style={{ background:"#3a1a1a",border:`1px solid ${T.danger}44`,borderRadius:8,padding:"10px 12px",marginBottom:8 }}>
+                <div style={{ color:T.white,fontSize:12,fontWeight:600,marginBottom:8 }}>Smazat „{h.name}" z historie?</div>
+                <div style={{ display:"flex",gap:8 }}>
+                  <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setConfirmDelHistory(null)}>Zrušit</Btn>
+                  <Btn small variant="danger" style={{ flex:1 }} onClick={()=>{ setHistory(prev=>prev.filter((_,j)=>j!==i)); setConfirmDelHistory(null); }}>Smazat</Btn>
+                </div>
               </div>
-              <Btn small variant="secondary" full onClick={()=>onReactivate(h.templateId)}>Znovu aktivovat (nová instance)</Btn>
-            </Card>
+            ) : (
+              <div style={{ display:"flex",gap:8 }}>
+                <Btn small variant="secondary" style={{ flex:1 }} onClick={()=>onReactivate(h)}>Znovu aktivovat</Btn>
+                <Btn small variant="danger" onClick={()=>setConfirmDelHistory(i)}>🗑</Btn>
+              </div>
+            )}
+          </Card>
           ))}
           {history.length===0&&(suggestedPlans?.["c_self"]||[]).length===0&&<div style={{ textAlign:"center",padding:"20px 0",color:T.muted,fontSize:13 }}>Žádné plány.</div>}
         </div>
@@ -2341,9 +2365,44 @@ export default function App() {
     const { data: { user } } = await supabase.auth.getUser();
     if (activeInstance) {
       const tmpl=library.find(t=>t.id===activeInstance.templateId);
-      setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:6}]);
+      setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:6,progressId:activeInstance.progressId}]);
       if (activeInstance.progressId) {
         await supabase.from('user_progress').update({ active: false }).eq('id', activeInstance.progressId);
+      }
+  async function handleReactivate(historyItem) {
+    const { data: { user } } = await supabase.auth.getUser();
+        
+        // Deaktivuj aktuální progress pokud existuje
+        if (activeInstance?.progressId) {
+          const tmpl = library.find(t=>t.id===activeInstance.templateId);
+          setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:6,progressId:activeInstance.progressId}]);
+          await supabase.from('user_progress').update({ active: false }).eq('id', activeInstance.progressId);
+        }
+      
+        if (historyItem.progressId) {
+          // Reaktivuj starý progress se všemi daty
+          await supabase.from('user_progress').update({ active: true }).eq('id', historyItem.progressId);
+          const { data: progress } = await supabase.from('user_progress')
+            .select('*')
+            .eq('id', historyItem.progressId)
+            .single();
+          if (progress) {
+            setActive({ templateId: progress.plan_id, startDate: progress.started_at, progressId: progress.id });
+            setExData(progress.ex_data || {});
+            const { data: completedWeeks } = await supabase.from('user_progress')
+              .select('completed_weeks')
+              .eq('id', historyItem.progressId)
+              .single();
+          }
+        } else {
+          // Starý záznam bez progressId — aktivuj jako nový
+          handleActivate(historyItem.templateId);
+          return;
+        }
+      
+        // Odstraň z historie
+        setHistory(prev => prev.filter(h => h.progressId !== historyItem.progressId));
+        setScreen("workout");
       }
     }
     const { data: newProgress } = await supabase.from('user_progress').insert([{
@@ -2409,7 +2468,7 @@ export default function App() {
         {screen==="exercises" && <ExercisesScreen exercises={exercises} setExercises={setExercises} isTrainer={isTrainer} groups={groups} setGroups={setGroups}/>}
         {screen==="library"   && <LibraryScreen library={library} setLibrary={setLibrary} activeInstance={activeInstance} onActivate={handleActivate} isTrainer={isTrainer} exercises={exercises} groups={groups} suggestedPlans={suggestedPlans}/>}
         {screen==="clients"   && isTrainer && <ClientsScreen library={library} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans}/>}
-        {screen==="profile"   && <ProfileScreen history={history} onReactivate={handleActivate} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans} library={library} userProfile={userProfile} onUpdateProfile={setUserProfile} onLogout={handleLogout}/>}
+        {screen==="profile"   && <ProfileScreen history={history} onReactivate={handleReactivate} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans} library={library} userProfile={userProfile} onUpdateProfile={setUserProfile} onLogout={handleLogout}/>}
       </div>
       <div style={{ position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:`#111111`,borderTop:`1px solid rgba(255,255,255,0.08)`,boxShadow:`0 -6px 24px rgba(0,0,0,0.8)`,display:"flex",justifyContent:"space-around",padding:"8px 0 20px",zIndex:100 }}>
         {nav.map(item=>(
