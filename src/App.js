@@ -1353,7 +1353,7 @@ function LibraryScreen({ library, setLibrary, activeInstance, onActivate, isTrai
             : <Btn full onClick={()=>setConfirmActivate(tmpl.id)}>Aktivovat plán →</Btn>
           }
           {confirmActivate===tmpl.id&&(
-          <div style={{ margin:"10px 18px 0",background:"#1a2a1a",border:`1px solid ${T.accent}44`,borderRadius:10,padding:"12px 14px" }}>
+          <div style={{ position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:400,background:"#1a2a1a",border:`1px solid ${T.accent}44`,borderRadius:10,padding:"12px 14px",zIndex:300,boxShadow:"0 4px 24px rgba(0,0,0,0.7)" }}>
           <div style={{ color:T.white,fontSize:13,fontWeight:600,marginBottom:10 }}>Aktivovat plán „{tmpl.name}"? Aktuální trénink bude přesunut do historie.</div>
           <div style={{ display:"flex",gap:8 }}>
           <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setConfirmActivate(null)}>Zrušit</Btn>
@@ -1818,7 +1818,7 @@ function RecordSection({ records, setRecords, metrics, addFields, emptyForm }) {
 }
 
 // ─── SCREEN: PROFIL ──────────────────────────────────────────────────────────
-function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlans, library, userProfile, onUpdateProfile, onLogout }) {
+function ProfileScreen({ history, setHistory, onReactivate, suggestedPlans, setSuggestedPlans, library, userProfile, onUpdateProfile, onLogout }) {
   const [tab,setTab] = useState("telo");
   const [profil, setProfil]         = useState({ vyska: userProfile?.vyska||"", vek: userProfile?.vek||"", pohlavi: userProfile?.pohlavi||"" });
   const [editProfil, setEditProfil] = useState(false);
@@ -1827,6 +1827,7 @@ function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlan
   const [addingPr,setAddingPr] = useState(false);
   const [newPr,setNewPr]       = useState({name:"",value:"",partie:undefined});
   const [confirmDelHistory, setConfirmDelHistory] = useState(null);
+  const [historyDetail, setHistoryDetail] = useState(null);
 
   const BODY_METRICS = [
     { key:"weight", label:"Hmotnost",       unit:"kg", color:"#2E9FAF" },
@@ -2005,10 +2006,15 @@ function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlan
           {history.map((h,i)=>(
             <Card key={i} style={{ padding:"16px",marginBottom:10 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10 }}>
-              <div><div style={{ color:T.white,fontWeight:700,fontSize:14 }}>{h.name}</div><div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{h.date}</div></div>
-              <span style={{ background:T.bgCard2,color:T.muted,fontSize:10,padding:"2px 8px",borderRadius:20,border:`1px solid ${T.borderDim}` }}>Dokončeno</span>
+              <div>
+                <div style={{ color:T.white,fontWeight:700,fontSize:14 }}>{h.name}</div>
+                <div style={{ color:T.muted,fontSize:11,marginTop:2 }}>{h.date}</div>
+              </div>
+              <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4 }}>
+                {h.completedWeeks&&<span style={{ color:T.accent,fontSize:10 }}>✓ {h.completedWeeks.length}/{h.weeks||6} týdnů</span>}
+              </div>
             </div>
-             {confirmDelHistory===i ? (
+            {confirmDelHistory===i ? (
               <div style={{ background:"#3a1a1a",border:`1px solid ${T.danger}44`,borderRadius:8,padding:"10px 12px",marginBottom:8 }}>
                 <div style={{ color:T.white,fontSize:12,fontWeight:600,marginBottom:8 }}>Smazat „{h.name}" z historie?</div>
                 <div style={{ display:"flex",gap:8 }}>
@@ -2019,9 +2025,37 @@ function ProfileScreen({ history, onReactivate, suggestedPlans, setSuggestedPlan
             ) : (
               <div style={{ display:"flex",gap:8 }}>
                 <Btn small variant="secondary" style={{ flex:1 }} onClick={()=>onReactivate(h)}>Znovu aktivovat</Btn>
+                <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setHistoryDetail(i)}>Náhled</Btn>
                 <Btn small variant="danger" onClick={()=>setConfirmDelHistory(i)}>🗑</Btn>
               </div>
             )}
+            {historyDetail===i&&(()=>{
+              const tmpl=library.find(t=>t.id===h.templateId);
+              if(!tmpl) return <div style={{ color:T.muted,fontSize:12,marginTop:8 }}>Plán nenalezen</div>;
+              return (
+                <div style={{ marginTop:10,borderTop:`1px solid ${T.borderDim}`,paddingTop:10 }}>
+                  <div style={{ color:T.muted,fontSize:11,marginBottom:8 }}>{tmpl.desc}</div>
+                  <div style={{ display:"flex",gap:14,marginBottom:10 }}>
+                    <span style={{ color:T.muted,fontSize:11 }}>📅 {tmpl.weeks} týdnů</span>
+                    <span style={{ color:T.muted,fontSize:11 }}>🏋️ {tmpl.blocks.length}× týdně</span>
+                    {h.completedWeeks&&<span style={{ color:T.accent,fontSize:11 }}>✓ Splněno {h.completedWeeks.length} týdnů</span>}
+                  </div>
+                  {tmpl.blocks.map((block,bi)=>(
+                <div key={block.id} style={{ marginBottom:8,padding:"8px 10px",background:T.bgCard2,borderRadius:8 }}>
+                <div style={{ color:T.white,fontWeight:600,fontSize:12,marginBottom:6 }}>{block.day} — {block.label}</div>
+                <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
+                {(block.split||[]).length>0
+                ? (()=>{ const bTypes=[...new Set((tmpl.blocks||[]).map(b=>b.type).filter(Boolean))]; const bTypeLabel=bTypes.includes("kombinace")||bTypes.length>1?"Kombinovaný":bTypes.includes("silovy")?"Silový":bTypes.includes("hypertrofie")?"Hypertrofie":""; const bColor=bTypeLabel==="Silový"?"#FF9500":bTypeLabel==="Hypertrofie"?"#8e0597":T.accent; return (block.split||[]).map((s,si)=><span key={si} style={{ background:bColor+"18",color:bColor,border:`1px solid ${bColor}44`,fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:5,display:"inline-flex",alignItems:"center" }}>{SPLIT_TYPES.find(st=>st.id===s)?.label||s}</span>); })()
+                : null}
+                {(block.silove||[]).filter(e=>e.name).length>0&&<span style={{ background:"#FF9500"+"18",color:"#FF9500",border:`1px solid ${"#FF9500"}44`,fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:5 }}>Silové {block.silove.filter(e=>e.name).length}</span>}
+               {(block.hypertrofie||[]).filter(e=>e.name).length>0&&<span style={{ background:"#8e0597"+"18",color:"#8e0597",border:`1px solid ${"#8e0597"}44`,fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:5 }}>Hypertrofie {block.hypertrofie.filter(e=>e.name).length}</span>}
+             </div>
+           </div>
+           ))}
+                  <Btn small variant="ghost" style={{ width:"100%",marginTop:4 }} onClick={()=>setHistoryDetail(null)}>Zavřít náhled</Btn>
+                </div>
+              );
+            })()}
           </Card>
           ))}
           {history.length===0&&(suggestedPlans?.["c_self"]||[]).length===0&&<div style={{ textAlign:"center",padding:"20px 0",color:T.muted,fontSize:13 }}>Žádné plány.</div>}
@@ -2261,6 +2295,24 @@ export default function App() {
             console.log("ACTIVE NAČTENO:", progress.plan_id);
           }
         }
+        // Načti historii ze Supabase
+         const { data: historyList } = await supabase.from('user_progress')
+         .select('*')
+         .eq('user_id', session.user.id)
+         .eq('active', false)
+         .order('updated_at', { ascending: false });
+
+        if (historyList && historyList.length > 0) {
+        const historyFromDb = historyList.map(p => ({
+        templateId: p.plan_id,
+        name: library.find(t=>t.id===p.plan_id)?.name || "Trénink",
+        date: new Date(p.started_at).toLocaleDateString("cs-CZ"),
+        weeks: library.find(t=>t.id===p.plan_id)?.weeks || 6,
+        progressId: p.id,
+        completedWeeks: p.completed_weeks || []
+        }));
+        setHistory(historyFromDb);
+        }
         if (result?.value) {
           const d = JSON.parse(result.value);
           if (d.groups)         setGroups(d.groups);
@@ -2365,7 +2417,8 @@ export default function App() {
     const { data: { user } } = await supabase.auth.getUser();
     if (activeInstance) {
       const tmpl=library.find(t=>t.id===activeInstance.templateId);
-      setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:6,progressId:activeInstance.progressId}]);
+      const { data: progressData } = await supabase.from('user_progress').select('completed_weeks').eq('id', activeInstance.progressId).single();
+      setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:tmpl?.weeks||6,progressId:activeInstance.progressId,completedWeeks:progressData?.completed_weeks||[]}]);
       if (activeInstance.progressId) {
         await supabase.from('user_progress').update({ active: false }).eq('id', activeInstance.progressId);
       }
@@ -2392,7 +2445,8 @@ export default function App() {
         // Deaktivuj aktuální progress pokud existuje
         if (activeInstance?.progressId) {
           const tmpl = library.find(t=>t.id===activeInstance.templateId);
-          setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:6,progressId:activeInstance.progressId}]);
+          const { data: progressData } = await supabase.from('user_progress').select('completed_weeks').eq('id', activeInstance.progressId).single();
+          setHistory(prev=>[...prev,{templateId:activeInstance.templateId,name:tmpl?.name||"Trénink",date:activeInstance.startDate,weeks:tmpl?.weeks||6,progressId:activeInstance.progressId,completedWeeks:progressData?.completed_weeks||[]}]);
           await supabase.from('user_progress').update({ active: false }).eq('id', activeInstance.progressId);
         }
       
@@ -2469,7 +2523,7 @@ export default function App() {
         {screen==="exercises" && <ExercisesScreen exercises={exercises} setExercises={setExercises} isTrainer={isTrainer} groups={groups} setGroups={setGroups}/>}
         {screen==="library"   && <LibraryScreen library={library} setLibrary={setLibrary} activeInstance={activeInstance} onActivate={handleActivate} isTrainer={isTrainer} exercises={exercises} groups={groups} suggestedPlans={suggestedPlans}/>}
         {screen==="clients"   && isTrainer && <ClientsScreen library={library} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans}/>}
-        {screen==="profile"   && <ProfileScreen history={history} onReactivate={handleReactivate} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans} library={library} userProfile={userProfile} onUpdateProfile={setUserProfile} onLogout={handleLogout}/>}
+        {screen==="profile" && <ProfileScreen history={history} setHistory={setHistory} onReactivate={handleReactivate} suggestedPlans={suggestedPlans} setSuggestedPlans={setSuggestedPlans} library={library} userProfile={userProfile} onUpdateProfile={setUserProfile} onLogout={handleLogout}/>}
       </div>
       <div style={{ position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:`#111111`,borderTop:`1px solid rgba(255,255,255,0.08)`,boxShadow:`0 -6px 24px rgba(0,0,0,0.8)`,display:"flex",justifyContent:"space-around",padding:"8px 0 20px",zIndex:100 }}>
         {nav.map(item=>(
