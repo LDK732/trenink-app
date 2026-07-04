@@ -2369,6 +2369,23 @@ export default function App() {
       if (activeInstance.progressId) {
         await supabase.from('user_progress').update({ active: false }).eq('id', activeInstance.progressId);
       }
+    }
+    const { data: newProgress } = await supabase.from('user_progress').insert([{
+      user_id: user.id,
+      plan_id: templateId,
+      completed_weeks: [],
+      ex_data: { _initialized: true },
+      active: true,
+    }]).select().single();
+    setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
+    setExData({ _initialized: true });
+    setSuggestedPlans(prev => ({
+      ...prev,
+      newAssignedPlanIds: (prev.newAssignedPlanIds || []).filter(id => id !== templateId)
+    }));
+    setScreen("workout");
+  }
+  
   async function handleReactivate(historyItem) {
     const { data: { user } } = await supabase.auth.getUser();
         
@@ -2404,22 +2421,6 @@ export default function App() {
         setHistory(prev => prev.filter(h => h.progressId !== historyItem.progressId));
         setScreen("workout");
       }
-    }
-    const { data: newProgress } = await supabase.from('user_progress').insert([{
-      user_id: user.id,
-      plan_id: templateId,
-      completed_weeks: [],
-      ex_data: { _initialized: true },
-      active: true,
-    }]).select().single();
-    setActive({ templateId, startDate: new Date().toLocaleDateString("cs-CZ"), progressId: newProgress?.id });
-    setExData({ _initialized: true });
-    setSuggestedPlans(prev => ({
-      ...prev,
-      newAssignedPlanIds: (prev.newAssignedPlanIds || []).filter(id => id !== templateId)
-    }));
-    setScreen("workout");
-  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
