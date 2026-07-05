@@ -1823,10 +1823,11 @@ function ProfileScreen({ history, setHistory, onReactivate, suggestedPlans, setS
   const [profil, setProfil]         = useState({ vyska: userProfile?.vyska||"", vek: userProfile?.vek||"", pohlavi: userProfile?.pohlavi||"" });
   const [editProfil, setEditProfil] = useState(false);
   const [profilForm, setProfilForm] = useState({ ...profil });
-  const [prs,setPrs] = useState([]);
+  const [prs,setPrs] = useState(userProfile?.prs_records || []);
   const [addingPr,setAddingPr] = useState(false);
   const [newPr,setNewPr]       = useState({name:"",value:"",partie:undefined});
   const [confirmDelHistory, setConfirmDelHistory] = useState(null);
+  const [confirmDelPr, setConfirmDelPr] = useState(null);
   const [historyDetail, setHistoryDetail] = useState(null);
 
   const BODY_METRICS = [
@@ -1835,7 +1836,7 @@ function ProfileScreen({ history, setHistory, onReactivate, suggestedPlans, setS
     { key:"fat",    label:"Tuk",            unit:"%",  color:"#FF6B6B" },
     { key:"vfat",   label:"Viscerální tuk", unit:"%",  color:"#FF9500" },
   ];
-  const [bodyRecords, setBodyRecords] = useState([]);
+  const [bodyRecords, setBodyRecords] = useState(userProfile?.body_records || []);
 
   const MIRY_METRICS = [
     { key:"hrudnik", label:"Hrudník", unit:"cm", color:"#2E9FAF" },
@@ -1845,7 +1846,22 @@ function ProfileScreen({ history, setHistory, onReactivate, suggestedPlans, setS
     { key:"stehno",  label:"Stehno",  unit:"cm", color:"#00CC00" },
     { key:"lytko",   label:"Lýtko",   unit:"cm", color:"#00CCFF" },
   ];
-  const [miryRecords, setMiryRecords] = useState([]);
+  const [miryRecords, setMiryRecords] = useState(userProfile?.miry_records || []);
+
+  const recordsSaveTimer = useRef(null);
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    clearTimeout(recordsSaveTimer.current);
+    recordsSaveTimer.current = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({
+        body_records: bodyRecords,
+        miry_records: miryRecords,
+        prs_records: prs,
+      }).eq('id', userProfile.id);
+      if (error) console.log("records save error:", error);
+    }, 800);
+    return () => clearTimeout(recordsSaveTimer.current);
+  }, [bodyRecords, miryRecords, prs, userProfile?.id]);
 
   const tabs = [
     {id:"telo",    label:"Tělo"},
@@ -1929,15 +1945,30 @@ function ProfileScreen({ history, setHistory, onReactivate, suggestedPlans, setS
           {prs.map((p,i)=>{
             const partieColor = p.partie ? (PARTIE[p.partie]?.color||T.accent) : T.accent;
             return (
-            <Card key={i} style={{ padding:"13px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",borderLeft:`3px solid ${partieColor}` }}>
-              <div>
-                <div style={{ color:T.white,fontWeight:600,fontSize:14 }}>{p.name}</div>
-                <div style={{ display:"flex",gap:8,marginTop:3,alignItems:"center" }}>
-                  <div style={{ color:T.muted,fontSize:10 }}>{p.date}</div>
-                  {p.partie&&<span style={{ color:partieColor,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:20,border:`1px solid ${partieColor}44`,background:partieColor+"18" }}>{PARTIE[p.partie]?.label}</span>}
+            <Card key={i} style={{ padding:"13px 16px",marginBottom:8 }}>
+              {confirmDelPr===i ? (
+                <div>
+                  <div style={{ color:T.white,fontSize:12,fontWeight:600,marginBottom:8 }}>Smazat rekord „{p.name}"?</div>
+                  <div style={{ display:"flex",gap:8 }}>
+                    <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setConfirmDelPr(null)}>Zrušit</Btn>
+                    <Btn small variant="danger" style={{ flex:1 }} onClick={()=>{ setPrs(prev=>prev.filter((_,j)=>j!==i)); setConfirmDelPr(null); }}>Smazat</Btn>
+                  </div>
                 </div>
-              </div>
-              <div style={{ background:partieColor+"18",border:`1px solid ${partieColor}44`,color:partieColor,fontWeight:800,fontSize:16,padding:"6px 14px",borderRadius:9,boxShadow:`0 0 12px ${partieColor}22` }}>{p.value} kg</div>
+              ) : (
+                <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",borderLeft:`3px solid ${partieColor}`,marginLeft:-16,paddingLeft:13,marginTop:-13,marginBottom:-13,marginRight:-16,paddingRight:16,paddingTop:13,paddingBottom:13 }}>
+                  <div>
+                    <div style={{ color:T.white,fontWeight:600,fontSize:14 }}>{p.name}</div>
+                    <div style={{ display:"flex",gap:8,marginTop:3,alignItems:"center" }}>
+                      <div style={{ color:T.muted,fontSize:10 }}>{p.date}</div>
+                      {p.partie&&<span style={{ color:partieColor,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:20,border:`1px solid ${partieColor}44`,background:partieColor+"18" }}>{PARTIE[p.partie]?.label}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                    <div style={{ background:partieColor+"18",border:`1px solid ${partieColor}44`,color:partieColor,fontWeight:800,fontSize:16,padding:"6px 14px",borderRadius:9,boxShadow:`0 0 12px ${partieColor}22` }}>{p.value} kg</div>
+                    <button onClick={()=>setConfirmDelPr(i)} style={{ background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:15,padding:"4px",lineHeight:1 }}>🗑</button>
+                  </div>
+                </div>
+              )}
             </Card>
             );
           })}
@@ -2019,7 +2050,11 @@ function ProfileScreen({ history, setHistory, onReactivate, suggestedPlans, setS
                 <div style={{ color:T.white,fontSize:12,fontWeight:600,marginBottom:8 }}>Smazat „{h.name}" z historie?</div>
                 <div style={{ display:"flex",gap:8 }}>
                   <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setConfirmDelHistory(null)}>Zrušit</Btn>
-                  <Btn small variant="danger" style={{ flex:1 }} onClick={()=>{ setHistory(prev=>prev.filter((_,j)=>j!==i)); setConfirmDelHistory(null); }}>Smazat</Btn>
+                  <Btn small variant="danger" style={{ flex:1 }} onClick={async ()=>{
+                  if (h.progressId) await supabase.from('user_progress').delete().eq('id', h.progressId);
+                  setHistory(prev=>prev.filter((_,j)=>j!==i));
+                  setConfirmDelHistory(null);
+                  }}>Smazat</Btn>
                 </div>
               </div>
             ) : (
@@ -2302,17 +2337,17 @@ export default function App() {
          .eq('active', false)
          .order('updated_at', { ascending: false });
 
-        if (historyList && historyList.length > 0) {
-        const historyFromDb = historyList.map(p => ({
-        templateId: p.plan_id,
-        name: library.find(t=>t.id===p.plan_id)?.name || "Trénink",
-        date: new Date(p.started_at).toLocaleDateString("cs-CZ"),
-        weeks: library.find(t=>t.id===p.plan_id)?.weeks || 6,
-        progressId: p.id,
-        completedWeeks: p.completed_weeks || []
-        }));
-        setHistory(historyFromDb);
-        }
+         if (historyList && historyList.length > 0) {
+          const historyFromDb = historyList.map(p => ({
+          templateId: p.plan_id,
+          name: library.find(t=>t.id===p.plan_id)?.name || "Trénink",
+          date: new Date(p.started_at).toLocaleDateString("cs-CZ"),
+          weeks: library.find(t=>t.id===p.plan_id)?.weeks || 6,
+          progressId: p.id,
+          completedWeeks: p.completed_weeks || []
+          }));
+          setHistory(historyFromDb);
+          }
         if (result?.value) {
           const d = JSON.parse(result.value);
           if (d.groups)         setGroups(d.groups);
