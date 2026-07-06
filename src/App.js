@@ -1736,6 +1736,7 @@ function RecordSection({ records, setRecords, metrics, addFields, emptyForm }) {
   };
   const sorted = [...records].sort((a,b)=>parseDate(a.date)-parseDate(b.date));
   const last = sorted[sorted.length-1];
+  const tableMetrics = metrics.filter(m => sorted.some(r=>r[m.key]));
 
   return (
     <div style={{ padding:"0 18px" }}>
@@ -1780,7 +1781,7 @@ function RecordSection({ records, setRecords, metrics, addFields, emptyForm }) {
           {/* Header row */}
           <div style={{ display:"flex",background:"rgba(0,0,0,0.35)",borderBottom:`1px solid ${T.borderDim}`,padding:"7px 10px" }}>
             <div style={{ width:88,color:"rgba(255,255,255,0.35)",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,flexShrink:0 }}>Datum</div>
-            {metrics.map(m=>(
+            {tableMetrics.map(m=>(
               <div key={m.key} style={{ flex:1,color:m.color,fontSize:9,fontWeight:700,textAlign:"right",textTransform:"uppercase",letterSpacing:0.8,paddingRight:6 }}>
                 {m.label}
               </div>
@@ -1799,7 +1800,7 @@ function RecordSection({ records, setRecords, metrics, addFields, emptyForm }) {
               ):(
                 <>
                   <div style={{ width:88,color:T.muted,fontSize:10,fontWeight:600,flexShrink:0 }}>{r.date}</div>
-                  {metrics.map(m=>(
+                  {tableMetrics.map(m=>(
                     <div key={m.key} style={{ flex:1,textAlign:"right",paddingRight:6 }}>
                       {r[m.key] && <span style={{ color:m.color,fontWeight:700,fontSize:13 }}>{r[m.key]} <span style={{ fontSize:9,fontWeight:500,opacity:0.7 }}>{m.unit}</span></span>}
                     </div>
