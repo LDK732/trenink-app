@@ -1801,8 +1801,7 @@ function RecordSection({ records, setRecords, metrics, addFields, emptyForm }) {
                   <div style={{ width:88,color:T.muted,fontSize:10,fontWeight:600,flexShrink:0 }}>{r.date}</div>
                   {metrics.map(m=>(
                     <div key={m.key} style={{ flex:1,textAlign:"right",paddingRight:6 }}>
-                      {r[m.key] ? <span style={{ color:m.color,fontWeight:700,fontSize:13 }}>{r[m.key]} <span style={{ fontSize:9,fontWeight:500,opacity:0.7 }}>{m.unit}</span></span>
-                        : <span style={{ color:"rgba(255,255,255,0.15)",fontSize:11 }}>–</span>}
+                      {r[m.key] && <span style={{ color:m.color,fontWeight:700,fontSize:13 }}>{r[m.key]} <span style={{ fontSize:9,fontWeight:500,opacity:0.7 }}>{m.unit}</span></span>}
                     </div>
                   ))}
                   <button onClick={()=>setDel(r.id)} style={{ width:20,background:"none",border:"none",color:"rgba(255,255,255,0.2)",cursor:"pointer",fontSize:13,lineHeight:1,padding:0,flexShrink:0 }}>×</button>
