@@ -1666,7 +1666,7 @@ function InbodyChart({ records, metrics }) {
   const totalH = activeMetrics.length * ROW_H + DATE_H;
 
   const metricData = activeMetrics.map(m => {
-    const vals = sorted.map(r => parseFloat(r[m.key]||""));
+    const vals = sorted.map(r => parseFloat(String(r[m.key]||"").replace(",", ".")));
     const valid = vals.filter(v=>!isNaN(v));
     if (valid.length < 1) return null;
     const minV = Math.min(...valid);
