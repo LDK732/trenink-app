@@ -578,7 +578,7 @@ function handleChange(exId, field, val, wIdx) {
     } else if (field==="noteB") {
       for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),noteB:val};
     } else if (field==="blockOpen") {
-      u[`block_open_${exId}`] = val;
+      u[exId] = val;
     } else {
       u[`${wIdx}_${exId}`]={...(u[`${wIdx}_${exId}`]||{}),reps:val};
     }
