@@ -520,10 +520,11 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
   const [weekIdx, setWeekIdx]          = useState(0);
   const [completedWeeks, setCompleted] = useState([]);
   const [detailEx, setDetailEx]        = useState(null);
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   useEffect(() => {
     async function loadProgress() {
-      if (!activeInstance?.progressId) return;
+      if (!activeInstance?.progressId) { setProgressLoaded(true); return; }
       const { data } = await supabase.from('user_progress')
         .select('completed_weeks, ex_data')
         .eq('id', activeInstance.progressId)
@@ -562,6 +563,7 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
     }));
   }
 }
+      setProgressLoaded(true);
     }
     loadProgress();
   }, [activeInstance?.progressId]);
@@ -679,9 +681,7 @@ function handleChange(exId, field, val, wIdx) {
         })}
       </div>
       <div style={{ padding:"0 12px" }}>
-      {tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={!exData._initialized 
-      ? exData[`block_open_${block.id}`] !== false 
-      : false} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
+      {progressLoaded && tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={exData[`block_open_${block.id}`] === true} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
       </div>
       <div style={{ padding:"6px 18px 0", color:T.muted, fontSize:10, textAlign:"center" }}> 📝 poznámka / 👁️ detail / 👇Dvojklik na název = skupina cviků</div>
     </div>
