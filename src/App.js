@@ -745,8 +745,18 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
     setExercises(prev => prev.filter(e => e.id !== id)); 
     setSelected(null); 
   }
-  function addGroup(partieKey) { if (!newGroupLabel.trim()) return; setGroups(prev => [...prev, { id:"g"+Date.now(), partie:partieKey, label:newGroupLabel.trim() }]); setNGL(""); }
-  function deleteGroup(groupId) { setGroups(prev => prev.filter(g => g.id !== groupId)); }
+  async function addGroup(partieKey) {
+    if (!newGroupLabel.trim()) return;
+    const newGroup = { id:"g"+Date.now(), partie:partieKey, label:newGroupLabel.trim(), created_by: (await supabase.auth.getUser()).data.user.id };
+    const { error } = await supabase.from('groups').insert([newGroup]);
+    if (error) { console.log("group insert error:", error); return; }
+    setGroups(prev => [...prev, newGroup]);
+    setNGL("");
+  }
+  async function deleteGroup(groupId) {
+    await supabase.from('groups').delete().eq('id', groupId);
+    setGroups(prev => prev.filter(g => g.id !== groupId));
+  }
 
   if (adding || editEx) {
     const isEdit = !!editEx;
@@ -2301,6 +2311,8 @@ export default function App() {
         const result = await window.storage?.get(STORAGE_KEY);
         const { data: exData2 } = await supabase.from('exercises').select('*');
         setExercises((exData2 || []).map(e => ({ ...e, desc: e.description, mediaUrl: e.media_url, groupId: e.group_id })));
+        const { data: groupsData } = await supabase.from('groups').select('*');
+        if (groupsData) setGroups(groupsData);
         const { data: plansData } = await supabase.from('plans').select('*');
         if (plansData && plansData.length > 0) {
           setLibrary(plansData.map(p => ({ ...p, desc: p.description, blocks: p.blocks || [] })));
@@ -2350,7 +2362,6 @@ export default function App() {
           }
         if (result?.value) {
           const d = JSON.parse(result.value);
-          if (d.groups)         setGroups(d.groups);
           if (d.history)        setHistory(d.history);
           if (d.suggestedPlans) setSuggestedPlans(prev => ({ ...d.suggestedPlans, assignedPlanIds: prev.assignedPlanIds, newAssignedPlanIds: prev.newAssignedPlanIds }));
           if (d.activeInstance) {} // záměrně ignorujeme - načítáme ze Supabase
