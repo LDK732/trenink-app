@@ -1456,7 +1456,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
     async function loadClients() {
       const { data } = await supabase.rpc("get_clients");
       if (data) setClients(data);
-      const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id');
+      const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id').eq('completed', false);
       if (assignments) {
       const counts = {};
       const planIds = {};
@@ -1526,7 +1526,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
                 await supabase.from('plan_assignments').delete()
                 .eq('plan_id', tmpl.id)
                 .eq('client_id', assigningClient.id);
-                const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id');
+                const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id').eq('completed', false);
                 if (assignments) {
                 const counts = {};
                 const planIds = {};
