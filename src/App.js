@@ -662,7 +662,7 @@ function handleChange(exId, field, val, wIdx) {
         if (newCompleted.length >= tmpl.weeks) {
           const { data: { user } } = await supabase.auth.getUser();
           await supabase.from('plan_assignments')
-            .update({ completed: true })
+            .update({ completed: true, completed_at: new Date().toISOString() })
             .eq('plan_id', tmpl.id)
             .eq('client_id', user.id);
              setSuggestedPlans(prev => ({
@@ -1534,6 +1534,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
               <Card key={i} style={{ padding:"14px" }}>
                 <div style={{ color:T.white,fontWeight:700,fontSize:14,marginBottom:4 }}>{tmpl?.name || "Neznámý plán"}</div>
                 {a.created_at&&<div style={{ color:T.muted,fontSize:11 }}>Přiřazeno: {new Date(a.created_at).toLocaleDateString("cs-CZ")}</div>}
+                {a.completed_at&&<div style={{ color:T.accent,fontSize:11,marginTop:2 }}>Dokončeno: {new Date(a.completed_at).toLocaleDateString("cs-CZ")}</div>}
               </Card>
             );
           })}
