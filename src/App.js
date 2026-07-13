@@ -1453,22 +1453,34 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
   const [showAssignedPlans, setShowAssignedPlans] = useState(null);
 
   useEffect(() => {
+    async function loadAssignments() {
+      const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id').eq('completed', false);
+      if (assignments) {
+        const counts = {};
+        const planIds = {};
+        assignments.forEach(a => {
+          counts[a.client_id] = (counts[a.client_id] || 0) + 1;
+          planIds[a.client_id] = [...(planIds[a.client_id] || []), a.plan_id];
+        });
+        setAssignmentCounts(counts);
+        setAssignmentPlanIds(planIds);
+      }
+    }
     async function loadClients() {
       const { data } = await supabase.rpc("get_clients");
       if (data) setClients(data);
-      const { data: assignments } = await supabase.from('plan_assignments').select('client_id, plan_id').eq('completed', false);
-      if (assignments) {
-      const counts = {};
-      const planIds = {};
-      assignments.forEach(a => {
-      counts[a.client_id] = (counts[a.client_id] || 0) + 1;
-      planIds[a.client_id] = [...(planIds[a.client_id] || []), a.plan_id];
-  });
-  setAssignmentCounts(counts);
-  setAssignmentPlanIds(planIds);
-}
+      await loadAssignments();
     }
     loadClients();
+
+    const channel = supabase
+      .channel('plan-assignments-trainer-view')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_assignments' }, () => {
+        loadAssignments();
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }, []);
 
   // Počet nových klientů tento měsíc
@@ -1578,7 +1590,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
                     <div style={{ color:T.white,fontWeight:700,fontSize:15 }}>{c.jmeno}</div>
                     <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                    {assignmentCounts[c.id] > 0 && <span onClick={()=>setShowAssignedPlans(showAssignedPlans===c.id?null:c.id)} style={{ background:"rgba(255,149,0,0.15)",color:"#FF9500",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,border:"1px solid rgba(255,149,0,0.3)",cursor:"pointer" }}>📋 Přiřazen plán</span>}
+                    {assignmentCounts[c.id] > 0 && <span onClick={()=>setShowAssignedPlans(showAssignedPlans===c.id?null:c.id)} style={{ background:"rgba(255,149,0,0.15)",color:"#FF9500",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20,border:"1px solid rgba(255,149,0,0.3)",cursor:"pointer" }}>Přiřazen plán</span>}
                     <span style={{ background:"rgba(46,159,175,0.15)",color:T.accent,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:20 }}>Aktivní</span>
                    </div>{showAssignedPlans===c.id && (
                    <div style={{ marginTop:8, padding:"8px 12px", background:"rgba(255,149,0,0.08)", borderRadius:8, border:"1px solid rgba(255,149,0,0.2)" }}>
