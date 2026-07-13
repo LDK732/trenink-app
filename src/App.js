@@ -293,6 +293,24 @@ function WeightInput({ value, onChange }) {
     </td>
   );
 }
+function DualWeightInput({ ex, weight, weightB, onChange, weekIdx }) {
+  const hasB = !!ex.nameB;
+  if (!hasB) {
+    return (
+      <td style={cellStyle}>
+        <input value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:13, fontWeight:700, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+      </td>
+    );
+  }
+  return (
+    <td style={{ ...cellStyle, padding:"4px 6px" }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"center" }}>
+        <input value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:12, fontWeight:700, textAlign:"center", padding:"4px 2px", outline:"none", fontFamily:"'JetBrains Mono',monospace" }}/>
+        <input value={weightB} onChange={e=>onChange(ex.id,"weightB",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:12, fontWeight:700, textAlign:"center", padding:"4px 2px", outline:"none", fontFamily:"'JetBrains Mono',monospace" }}/>
+      </div>
+    </td>
+  );
+}
 
 // ─── DUAL EXERCISE CELL ──────────────────────────────────────────────────────
 function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNote, onSaveNoteB, onSwapEx }) {
@@ -354,6 +372,7 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
 
 function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx }) {
   const weight = wd.weight ?? ex.vaha;
+  const weightB = wd.weightB ?? "";
   const reps = wd.reps ?? null;
 
   function getPlaceholderReps() {
@@ -381,7 +400,7 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
         onSaveNote={v=>onChange(ex.id,"note",v,weekIdx)}
         onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
         onSwapEx={onSwapEx}/>
-      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
+      <DualWeightInput ex={ex} weight={weight} weightB={weightB} onChange={onChange} weekIdx={weekIdx}/>
       <td style={cellStyle}>
         {isWeek0 ? (
           <div style={{ width:88, fontSize:12, fontWeight:700, textAlign:"center", padding:"5px 3px",
@@ -417,6 +436,7 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
 }
 function HypertrofieRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx }) {
   const weight = wd.weight ?? ex.vaha;
+  const weightB = wd.weightB ?? "";
   return (
     <tr>
       <DualExCell ex={ex} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups}
@@ -424,7 +444,7 @@ function HypertrofieRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises,
         onSaveNote={v=>onChange(ex.id,"note",v,weekIdx)}
         onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
         onSwapEx={onSwapEx}/>
-      <WeightInput value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)}/>
+      <DualWeightInput ex={ex} weight={weight} weightB={weightB} onChange={onChange} weekIdx={weekIdx}/>
       <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.serie}</td>
       <td style={{ ...cellStyle, color:T.muted, fontSize:11 }}>{ex.rep}</td>
     </tr>
@@ -568,21 +588,23 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
     loadProgress();
   }, [activeInstance?.progressId]);
 
-function handleChange(exId, field, val, wIdx) {
-  setExData(prev => {
-    const u = {...prev};
-    if (field==="weight") {
-      for(let w=wIdx;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),weight:val};
-    } else if (field==="note") {
-      for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),note:val};
-    } else if (field==="noteB") {
-      for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),noteB:val};
-    } else if (field==="blockOpen") {
-      u[exId] = val;
-    } else {
-      u[`${wIdx}_${exId}`]={...(u[`${wIdx}_${exId}`]||{}),reps:val};
-    }
-    if (activeInstance?.progressId) {
+  function handleChange(exId, field, val, wIdx) {
+    setExData(prev => {
+      const u = {...prev};
+      if (field==="weight") {
+        for(let w=wIdx;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),weight:val};
+      } else if (field==="weightB") {
+        for(let w=wIdx;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),weightB:val};
+      } else if (field==="note") {
+        for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),note:val};
+      } else if (field==="noteB") {
+        for(let w=0;w<6;w++) u[`${w}_${exId}`]={...(u[`${w}_${exId}`]||{}),noteB:val};
+      } else if (field==="blockOpen") {
+        u[exId] = val;
+      } else {
+        u[`${wIdx}_${exId}`]={...(u[`${wIdx}_${exId}`]||{}),reps:val};
+      }
+     if (activeInstance?.progressId) {
       supabase.from('user_progress').update({ ex_data: u }).eq('id', activeInstance.progressId)
         .then(({ error }) => console.log("exData save:", error, "progressId:", activeInstance.progressId));
     }
