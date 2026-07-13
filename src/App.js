@@ -1446,6 +1446,8 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
   const [assigningClient, setAssigningClient] = useState(null);
   const [viewingClient,   setViewingClient]   = useState(null);
   const [confirmRemove,   setConfirmRemove]   = useState(null);
+  const [historyClient, setHistoryClient] = useState(null);
+  const [completedAssignments, setCompletedAssignments] = useState([]);
 
   // Načti klienty ze Supabase
   const [assignmentCounts, setAssignmentCounts] = useState({});
@@ -1502,8 +1504,44 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
       setAssignmentPlanIds(prev => ({ ...prev, [client.id]: [...(prev[client.id] || []), tmpl.id] }));
     }
   }
+  async function openHistory(client) {
+    setHistoryClient(client);
+    const { data } = await supabase.from('plan_assignments')
+      .select('*')
+      .eq('client_id', client.id)
+      .eq('completed', true)
+      .order('created_at', { ascending: false });
+    setCompletedAssignments(data || []);
+  }
 
   // ── Assign plan modal ──
+  // ── Client history modal ──
+  if (historyClient) {
+    return (
+      <div style={{ paddingBottom:90 }}>
+        <div style={{ padding:"18px 18px 0",display:"flex",alignItems:"center",gap:10 }}>
+          <button onClick={()=>setHistoryClient(null)} style={{ background:"none",border:"none",color:T.accent,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit" }}>← Zpět</button>
+          <div style={{ color:T.muted,fontSize:11 }}>Historie přiřazených plánů</div>
+        </div>
+        <div style={{ padding:"10px 18px 4px" }}>
+          <div style={{ color:T.accent,fontSize:9,letterSpacing:2.5,textTransform:"uppercase",fontWeight:700,opacity:0.8,marginBottom:4 }}>Klient</div>
+          <div style={{ color:T.white,fontWeight:700,fontSize:18,marginBottom:16 }}>{historyClient.jmeno}</div>
+        </div>
+        <div style={{ padding:"0 12px",display:"flex",flexDirection:"column",gap:10 }}>
+          {completedAssignments.map((a,i)=>{
+            const tmpl = library.find(t=>t.id===a.plan_id);
+            return (
+              <Card key={i} style={{ padding:"14px" }}>
+                <div style={{ color:T.white,fontWeight:700,fontSize:14,marginBottom:4 }}>{tmpl?.name || "Neznámý plán"}</div>
+                {a.created_at&&<div style={{ color:T.muted,fontSize:11 }}>Přiřazeno: {new Date(a.created_at).toLocaleDateString("cs-CZ")}</div>}
+              </Card>
+            );
+          })}
+          {completedAssignments.length===0&&<div style={{ color:T.muted,fontSize:13,textAlign:"center",padding:"20px 0" }}>Zatím žádné dokončené plány.</div>}
+        </div>
+      </div>
+    );
+  }
   if (assigningClient) {
     return (
       <div style={{ paddingBottom:90 }}>
@@ -1609,6 +1647,7 @@ function ClientsScreen({ library, suggestedPlans, setSuggestedPlans }) {
               <div style={{ display:"flex",gap:8,marginTop:12 }}>
                 <Btn small variant="secondary" style={{ flex:1 }} onClick={()=>setViewingClient(c)}>Zobrazit profil</Btn>
                 <Btn small variant="ghost" style={{ flex:1 }} onClick={()=>setAssigningClient(c)}>Přiřadit plán</Btn>
+                <Btn small variant="ghost" onClick={()=>openHistory(c)}>Plány</Btn>
               </div>
             </Card>
           );
