@@ -214,7 +214,7 @@ function NoteBubble({ note, onSave, onClose }) {
 }
 
 // ─── EXERCISE NAME CELL ──────────────────────────────────────────────────────
-function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onSwapEx }) {
+function ExNameCell({ ex, onOpenDetail, exercises, groups, note, onSaveNote, onSwapEx, achieved }) {
   const p = PARTIE[ex.partie] || { color:T.accent };
   const timerRef  = useRef(null);
   const [pressing, setPressing] = useState(false);
@@ -313,14 +313,14 @@ function DualWeightInput({ ex, weight, weightB, onChange, weekIdx }) {
 }
 
 // ─── DUAL EXERCISE CELL ──────────────────────────────────────────────────────
-function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNote, onSaveNoteB, onSwapEx }) {
+function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNote, onSaveNoteB, onSwapEx, achieved }) {
   const [showNoteA, setShowNoteA] = useState(false);
   const [showNoteB, setShowNoteB] = useState(false);
   const hasB = !!ex.nameB;
   const pA = PARTIE[ex.partie]||{color:T.accent};
 
   if (!hasB) return (
-    <ExNameCell ex={ex} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups} note={note} onSaveNote={onSaveNote} onSwapEx={onSwapEx}/>
+    <ExNameCell ex={ex} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups} note={note} onSaveNote={onSaveNote} onSwapEx={onSwapEx} achieved={achieved}/>
   );
 
   const exB = { name:ex.nameB, partie:ex.partieB||ex.partie, refType:ex.refTypeB, refId:ex.refIdB };
@@ -370,10 +370,20 @@ function DualExCell({ ex, onOpenDetail, exercises, groups, note, noteB, onSaveNo
   );
 }
 
-function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx }) {
+function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, groups, onSwapEx, totalWeeks }) {
   const weight = wd.weight ?? ex.vaha;
   const weightB = wd.weightB ?? "";
   const reps = wd.reps ?? null;
+
+  function parseNums(s) {
+    return String(s||"").split(",").map(x=>parseInt(x.trim())).filter(n=>!isNaN(n));
+  }
+  const isLastWeek = totalWeeks && weekIdx === totalWeeks - 1;
+  const achieved = !!(isLastWeek && reps !== null && ex.cil && (() => {
+    const a = parseNums(reps);
+    const t = parseNums(ex.cil);
+    return a.length>0 && a.length===t.length && a.every((v,i)=>v>=t[i]);
+  })());
 
   function getPlaceholderReps() {
     const baseReps = (ex.rep || "").split(",").map(r => parseInt(r.trim())).filter(n => !isNaN(n));
@@ -399,7 +409,7 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
         note={wd.note} noteB={wd.noteB}
         onSaveNote={v=>onChange(ex.id,"note",v,weekIdx)}
         onSaveNoteB={v=>onChange(ex.id,"noteB",v,weekIdx)}
-        onSwapEx={onSwapEx}/>
+        onSwapEx={onSwapEx} achieved={achieved}/>
       <DualWeightInput ex={ex} weight={weight} weightB={weightB} onChange={onChange} weekIdx={weekIdx}/>
       <td style={cellStyle}>
         {isWeek0 ? (
@@ -421,7 +431,8 @@ function SiloveRow({ ex, weekIdx, wd={}, onChange, onOpenDetail, exercises, grou
             }}
             onFocus={e => { if (e.target.value === placeholderReps) e.target.select(); }}
             style={{ width:88, background:"transparent",
-            border:`1px solid ${reps !== null ? T.accent+"66" : T.borderDim}`,
+            border: achieved ? `2px solid ${T.accent}` : `1px solid ${reps !== null ? T.accent+"66" : T.borderDim}`,
+            boxShadow: achieved ? `0 0 8px ${T.accent}66` : "none",
             borderRadius:6, color: reps !== null ? T.accent : "#184b5e",
             fontSize:12, fontWeight: reps !== null ? 700 : 400,
             textAlign:"center", padding:"5px 3px",
@@ -469,7 +480,7 @@ function SectionRow({ label, timerSeconds }) {
 }
 
 // ─── TRAINING BLOCK ──────────────────────────────────────────────────────────
-function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises, groups, blockIndex, onSwapEx, initialOpen, onToggle }) {
+function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises, groups, blockIndex, onSwapEx, initialOpen, onToggle, totalWeeks }) {
   const [open, setOpen] = useState(initialOpen);
   const hasSilove = (block.silove||[]).length > 0;
   const hasHyper  = (block.hypertrofie||[]).length > 0;
@@ -488,7 +499,7 @@ function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises
           {hasSilove && <>
             <SectionRow label="Silové cviky" timerSeconds={180}/>
             <table style={{ width:"100%", borderCollapse:"collapse", minWidth:420 }}><THead isSilove={true}/><tbody>
-              {block.silove.map(ex => <SiloveRow key={ex.id} ex={ex} weekIdx={weekIdx} wd={data[ex.id]} onChange={onChange} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups} onSwapEx={onSwapEx ? (newEx)=>onSwapEx(block.id,"silove",ex.id,newEx) : null}/>)}
+            {block.silove.map(ex => <SiloveRow key={ex.id} ex={ex} weekIdx={weekIdx} wd={data[ex.id]} onChange={onChange} onOpenDetail={onOpenDetail} exercises={exercises} groups={groups} onSwapEx={onSwapEx ? (newEx)=>onSwapEx(block.id,"silove",ex.id,newEx) : null} totalWeeks={totalWeeks}/>)}
             </tbody></table>
             {hasHyper && <div style={{ height:1, background:`linear-gradient(90deg,transparent,${T.accent}44,transparent)`, margin:"4px 12px" }}/>}
           </>}
@@ -703,7 +714,7 @@ function WorkoutScreen({ activeInstance, onActivate, library, setLibrary, exerci
         })}
       </div>
       <div style={{ padding:"0 12px" }}>
-      {progressLoaded && tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={exData[`block_open_${block.id}`] === true} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)}/>)}
+      {progressLoaded && tmpl.blocks.map((block, bi) => <TrainingBlock key={block.id} block={block} blockIndex={bi} weekIdx={weekIdx} data={currentData} onChange={handleChange} onOpenDetail={setDetailEx} exercises={exercises} groups={groups} onSwapEx={handleSwap} initialOpen={exData[`block_open_${block.id}`] === true} onToggle={(isOpen) => handleChange(`block_open_${block.id}`, "blockOpen", isOpen, weekIdx)} totalWeeks={tmpl.weeks}/>)}
       </div>
       <div style={{ padding:"6px 18px 0", color:T.muted, fontSize:10, textAlign:"center" }}> 📝 poznámka / 👁️ detail / 👇Dvojklik na název = skupina cviků</div>
     </div>
