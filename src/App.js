@@ -298,15 +298,15 @@ function DualWeightInput({ ex, weight, weightB, onChange, weekIdx }) {
   if (!hasB) {
     return (
       <td style={cellStyle}>
-        <input value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:13, fontWeight:700, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
+        <input inputMode="decimal" value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:13, fontWeight:700, textAlign:"center", padding:"5px 3px", outline:"none", fontFamily:"'JetBrains Mono',monospace", margin:"4px 0" }}/>
       </td>
     );
   }
   return (
     <td style={{ ...cellStyle, padding:"4px 6px" }}>
       <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"center" }}>
-        <input value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:12, fontWeight:700, textAlign:"center", padding:"4px 2px", outline:"none", fontFamily:"'JetBrains Mono',monospace" }}/>
-        <input value={weightB} onChange={e=>onChange(ex.id,"weightB",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:12, fontWeight:700, textAlign:"center", padding:"4px 2px", outline:"none", fontFamily:"'JetBrains Mono',monospace" }}/>
+        <input inputMode="decimal" value={weight} onChange={e=>onChange(ex.id,"weight",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:12, fontWeight:700, textAlign:"center", padding:"4px 2px", outline:"none", fontFamily:"'JetBrains Mono',monospace" }}/>
+        <input inputMode="decimal" value={weightB} onChange={e=>onChange(ex.id,"weightB",e.target.value,weekIdx)} style={{ width:38, background:"transparent", border:`1px solid ${T.borderDim}`, borderRadius:6, color:T.white, fontSize:12, fontWeight:700, textAlign:"center", padding:"4px 2px", outline:"none", fontFamily:"'JetBrains Mono',monospace" }}/>
       </div>
     </td>
   );
