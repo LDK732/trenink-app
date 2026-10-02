@@ -117,7 +117,7 @@ function Card({ children, style={}, onClick }) {
   );
 }
 
-function PhotoCarousel({ photos, height=180 }) {
+function PhotoCarousel({ photos, aspectRatio="1 / 1" }) {
   const [idx, setIdx] = useState(0);
   if (!photos || photos.length===0) return null;
   function handleScroll(e) {
@@ -128,7 +128,7 @@ function PhotoCarousel({ photos, height=180 }) {
     <div style={{ position:"relative" }}>
       <div onScroll={handleScroll} style={{ display:"flex", overflowX:"auto", scrollSnapType:"x mandatory", WebkitOverflowScrolling:"touch" }}>
         {photos.map((url,i)=>(
-          <img key={i} src={url} alt="" style={{ width:"100%", flexShrink:0, scrollSnapAlign:"start", objectFit:"cover", height, display:"block" }}/>
+          <img key={i} src={url} alt="" style={{ width:"100%", flexShrink:0, scrollSnapAlign:"start", objectFit:"cover", aspectRatio, display:"block" }}/>
         ))}
       </div>
       {photos.length>1 && (
@@ -170,7 +170,7 @@ function GroupPickerModal({ groupId, groupName, exercises, groups, onSwapEx, onC
           <div style={{ overflowY:"auto",padding:"12px 16px 28px" }}>
             <div style={{ background:T.bg,borderRadius:9,border:`1px solid ${T.borderDim}`,overflow:"hidden",marginBottom:12 }}>
               {photos.length>0
-                ? <PhotoCarousel photos={photos} height={160}/>
+                ? <PhotoCarousel photos={photos}/>
                 : <div style={{ textAlign:"center",padding:"22px 0" }}><div style={{ fontSize:30 }}>💪</div><div style={{ color:T.muted,fontSize:11,marginTop:4 }}>Fotografie nebyly přidány</div></div>}
             </div>
             {detailEx.mediaUrl&&(
@@ -560,7 +560,7 @@ function ExDetailModal({ ex, exercises, onClose }) {
         </div>
         <div style={{ background:T.bg, borderBottom:`1px solid ${T.borderDim}` }}>
           {photos.length>0
-            ? <PhotoCarousel photos={photos} height={180}/>
+            ? <PhotoCarousel photos={photos}/>
             : <div style={{ textAlign:"center", padding:"24px 0" }}><div style={{ fontSize:32 }}>💪</div><div style={{ color:T.muted, fontSize:11, marginTop:5 }}>Fotografie nebyly přidány</div></div>}
         </div>
         {full?.mediaUrl&&(
@@ -961,7 +961,7 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
           </div>
           <div style={{ background:T.bg,borderBottom:`1px solid ${T.borderDim}` }}>
             {photos.length>0
-              ? <PhotoCarousel photos={photos} height={200}/>
+              ? <PhotoCarousel photos={photos}/>
               : <div style={{ textAlign:"center",padding:"28px 0" }}><div style={{ fontSize:36 }}>💪</div><div style={{ color:T.muted,fontSize:11,marginTop:6 }}>Fotografie nebyly přidány</div></div>}
           </div>
           {selected.mediaUrl&&(
