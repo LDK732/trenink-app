@@ -117,6 +117,31 @@ function Card({ children, style={}, onClick }) {
   );
 }
 
+function PhotoCarousel({ photos, height=180 }) {
+  const [idx, setIdx] = useState(0);
+  if (!photos || photos.length===0) return null;
+  function handleScroll(e) {
+    const w = e.target.clientWidth;
+    if (w>0) setIdx(Math.round(e.target.scrollLeft / w));
+  }
+  return (
+    <div style={{ position:"relative" }}>
+      <div onScroll={handleScroll} style={{ display:"flex", overflowX:"auto", scrollSnapType:"x mandatory", WebkitOverflowScrolling:"touch" }}>
+        {photos.map((url,i)=>(
+          <img key={i} src={url} alt="" style={{ width:"100%", flexShrink:0, scrollSnapAlign:"start", objectFit:"cover", height, display:"block" }}/>
+        ))}
+      </div>
+      {photos.length>1 && (
+        <div style={{ position:"absolute", bottom:8, left:0, right:0, display:"flex", justifyContent:"center", gap:5 }}>
+          {photos.map((_,i)=>(
+            <span key={i} style={{ width:6, height:6, borderRadius:"50%", background:i===idx?"#fff":"rgba(255,255,255,0.4)", boxShadow:"0 0 4px rgba(0,0,0,0.6)" }}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── GROUP PICKER MODAL ──────────────────────────────────────────────────────
 function GroupPickerModal({ groupId, groupName, exercises, groups, onSwapEx, onClose }) {
   const [detailEx, setDetailEx] = useState(null);
@@ -124,8 +149,7 @@ function GroupPickerModal({ groupId, groupName, exercises, groups, onSwapEx, onC
 
   if (detailEx) {
     const p = PARTIE[detailEx.partie]||{color:T.accent};
-    const isYT = detailEx.mediaUrl?.includes("youtube");
-    const isImg = detailEx.mediaUrl && !isYT;
+    const photos = detailEx.mediaPhotos||[];
     return (
       <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:600,display:"flex",alignItems:"flex-end" }}>
         <div style={{ background:T.bgCard,borderRadius:"16px 16px 0 0",width:"100%",maxHeight:"80vh",display:"flex",flexDirection:"column" }}>
@@ -144,11 +168,16 @@ function GroupPickerModal({ groupId, groupName, exercises, groups, onSwapEx, onC
             <button onClick={onClose} style={{ background:"rgba(255,255,255,0.08)",border:"none",borderRadius:7,color:T.muted,fontSize:15,cursor:"pointer",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>✕</button>
           </div>
           <div style={{ overflowY:"auto",padding:"12px 16px 28px" }}>
-            <div style={{ background:T.bg,borderRadius:9,border:`1px solid ${T.borderDim}`,overflow:"hidden",marginBottom:12,minHeight:110,display:"flex",alignItems:"center",justifyContent:"center" }}>
-              {isYT ? <iframe src={detailEx.mediaUrl.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")} style={{ width:"100%",height:180,border:"none" }} allowFullScreen title="video"/>
-               : isImg ? <img src={detailEx.mediaUrl} alt={detailEx.name} style={{ width:"100%",maxHeight:180,objectFit:"cover" }}/>
-               : <div style={{ textAlign:"center" }}><div style={{ fontSize:30 }}>💪</div><div style={{ color:T.muted,fontSize:11,marginTop:4 }}>Foto / video nebylo přidáno</div></div>}
+            <div style={{ background:T.bg,borderRadius:9,border:`1px solid ${T.borderDim}`,overflow:"hidden",marginBottom:12 }}>
+              {photos.length>0
+                ? <PhotoCarousel photos={photos} height={160}/>
+                : <div style={{ textAlign:"center",padding:"22px 0" }}><div style={{ fontSize:30 }}>💪</div><div style={{ color:T.muted,fontSize:11,marginTop:4 }}>Fotografie nebyly přidány</div></div>}
             </div>
+            {detailEx.mediaUrl&&(
+              <div style={{ background:T.bg,borderRadius:9,border:`1px solid ${T.borderDim}`,overflow:"hidden",marginBottom:12 }}>
+                <iframe src={detailEx.mediaUrl.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")} style={{ width:"100%",height:180,border:"none",display:"block" }} allowFullScreen title="video"/>
+              </div>
+            )}
             {detailEx.desc&&<div style={{ color:T.muted,fontSize:13,lineHeight:1.6,marginBottom:12 }}>{detailEx.desc}</div>}
             <div style={{ color:T.muted,fontSize:12 }}>Vybavení: <span style={{ color:T.accent,fontWeight:600 }}>{detailEx.equipment}</span></div>
           </div>
@@ -520,8 +549,7 @@ function TrainingBlock({ block, weekIdx, data, onChange, onOpenDetail, exercises
 function ExDetailModal({ ex, exercises, onClose }) {
   const full = exercises.find(e => e.name.toLowerCase()===ex.name.toLowerCase() || e.name.toLowerCase().includes(ex.name.toLowerCase().split(" ")[0]));
   const p = PARTIE[ex.partie] || { color:T.accent };
-  const isYT = full?.mediaUrl && full.mediaUrl.includes("youtube");
-  const isImg = full?.mediaUrl && !isYT;
+  const photos = full?.mediaPhotos||[];
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:500, display:"flex", alignItems:"flex-end" }} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{ background:T.bgCard, borderRadius:"16px 16px 0 0", width:"100%", maxHeight:"78vh", overflowY:"auto" }}>
@@ -530,12 +558,17 @@ function ExDetailModal({ ex, exercises, onClose }) {
           <div style={{ color:p.color, fontSize:10, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase", marginBottom:4 }}>{PARTIE[ex.partie]?.label||ex.partie}</div>
           <div style={{ color:T.white, fontWeight:800, fontSize:19 }}>{ex.name}</div>
         </div>
-        <div style={{ padding:"16px 20px 28px" }}>
-          <div style={{ minHeight:130, background:T.bg, borderRadius:10, border:`1px solid ${T.borderDim}`, overflow:"hidden", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            {isYT ? <iframe src={full.mediaUrl.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")} style={{ width:"100%",height:200,border:"none" }} allowFullScreen title="video"/>
-             : isImg ? <img src={full.mediaUrl} alt={ex.name} style={{ width:"100%",maxHeight:200,objectFit:"cover" }}/>
-             : <div style={{ textAlign:"center" }}><div style={{ fontSize:32 }}>💪</div><div style={{ color:T.muted, fontSize:11, marginTop:5 }}>Foto / video nebylo přidáno</div></div>}
+        <div style={{ background:T.bg, borderBottom:`1px solid ${T.borderDim}` }}>
+          {photos.length>0
+            ? <PhotoCarousel photos={photos} height={180}/>
+            : <div style={{ textAlign:"center", padding:"24px 0" }}><div style={{ fontSize:32 }}>💪</div><div style={{ color:T.muted, fontSize:11, marginTop:5 }}>Fotografie nebyly přidány</div></div>}
+        </div>
+        {full?.mediaUrl&&(
+          <div style={{ background:T.bg, borderBottom:`1px solid ${T.borderDim}` }}>
+            <iframe src={full.mediaUrl.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")} style={{ width:"100%",height:200,border:"none",display:"block" }} allowFullScreen title="video"/>
           </div>
+        )}
+        <div style={{ padding:"16px 20px 28px" }}>
           {full ? <>
             <div style={{ color:T.muted, fontSize:13, lineHeight:1.65, marginBottom:14 }}>{full.desc}</div>
             <div style={{ color:T.muted, fontSize:12 }}>Vybavení: <span style={{ color:T.accent, fontWeight:600 }}>{full.equipment}</span></div>
@@ -911,8 +944,7 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
   if (selected) {
     const p = PARTIE[selected.partie]||{color:T.accent};
     const group = groups.find(g=>g.id===selected.groupId);
-    const isYT = selected.mediaUrl && selected.mediaUrl.includes("youtube");
-    const isImg = selected.mediaUrl && !isYT;
+    const photos = selected.mediaPhotos||[];
     return (
       <div style={{ paddingBottom:90 }}>
         <div style={{ padding:"18px 18px 0", display:"flex",justifyContent:"space-between",alignItems:"center" }}>
@@ -927,11 +959,16 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
             </div>
             <div style={{ color:T.white,fontWeight:800,fontSize:19 }}>{selected.name}</div>
           </div>
-          <div style={{ background:T.bg,borderBottom:`1px solid ${T.borderDim}`,overflow:"hidden",minHeight:140,display:"flex",alignItems:"center",justifyContent:"center" }}>
-            {isYT ? <iframe src={selected.mediaUrl.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")} style={{ width:"100%",height:200,border:"none" }} allowFullScreen title="video"/>
-             : isImg ? <img src={selected.mediaUrl} alt={selected.name} style={{ width:"100%",maxHeight:200,objectFit:"cover" }}/>
-             : <div style={{ textAlign:"center",padding:"28px 0" }}><div style={{ fontSize:36 }}>💪</div><div style={{ color:T.muted,fontSize:11,marginTop:6 }}>Foto / video nebylo přidáno</div></div>}
+          <div style={{ background:T.bg,borderBottom:`1px solid ${T.borderDim}` }}>
+            {photos.length>0
+              ? <PhotoCarousel photos={photos} height={200}/>
+              : <div style={{ textAlign:"center",padding:"28px 0" }}><div style={{ fontSize:36 }}>💪</div><div style={{ color:T.muted,fontSize:11,marginTop:6 }}>Fotografie nebyly přidány</div></div>}
           </div>
+          {selected.mediaUrl&&(
+            <div style={{ background:T.bg,borderBottom:`1px solid ${T.borderDim}` }}>
+              <iframe src={selected.mediaUrl.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")} style={{ width:"100%",height:200,border:"none",display:"block" }} allowFullScreen title="video"/>
+            </div>
+          )}
           <div style={{ padding:"16px" }}>
             {selected.desc&&<div style={{ color:T.muted,fontSize:13,lineHeight:1.65,marginBottom:14 }}>{selected.desc}</div>}
             <div style={{ color:T.muted,fontSize:12 }}>Vybavení: <span style={{ color:T.accent,fontWeight:600 }}>{selected.equipment}</span></div>
