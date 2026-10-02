@@ -732,8 +732,34 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
   const [managingGroups, setMG]   = useState(null);
   const [newGroupLabel, setNGL]   = useState("");
 
-  const EMPTY_FORM = { name:"", partie:"prsa", groupId:"", equipment:"", desc:"", mediaUrl:"" };
+  const EMPTY_FORM = { name:"", partie:"prsa", groupId:"", equipment:"", desc:"", mediaUrl:"", photos:[] };
   const [form, setForm] = useState(EMPTY_FORM);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  async function handlePhotoUpload(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploadingPhoto(true);
+    const newUrls = [];
+    for (const file of files) {
+      const ext = file.name.split('.').pop();
+      const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('exercise-photos').upload(path, file);
+      if (!error) {
+        const { data } = supabase.storage.from('exercise-photos').getPublicUrl(path);
+        newUrls.push(data.publicUrl);
+      } else {
+        console.log("photo upload error:", error);
+      }
+    }
+    setForm(f => ({ ...f, photos: [...(f.photos||[]), ...newUrls] }));
+    setUploadingPhoto(false);
+    e.target.value = "";
+  }
+
+  function removePhoto(idx) {
+    setForm(f => ({ ...f, photos: f.photos.filter((_,i)=>i!==idx) }));
+  }
 
   const partiesVisible = partieFilter ? [partieFilter] : Object.keys(PARTIE);
 
@@ -746,7 +772,7 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
     if (editEx) {
       const { error } = await supabase.from('exercises').update({
         name: form.name, partie: form.partie, group_id: form.groupId,
-        equipment: form.equipment, description: form.desc, media_url: form.mediaUrl
+        equipment: form.equipment, description: form.desc, media_url: form.mediaUrl, media_photos: form.photos||[]
       }).eq('id', editEx.id);
       console.log("UPDATE result:", error);
       setExercises(prev => prev.map(e => e.id === editEx.id ? {
@@ -759,15 +785,17 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
         description: form.desc,
         desc: form.desc,
         media_url: form.mediaUrl,
-        mediaUrl: form.mediaUrl
+        mediaUrl: form.mediaUrl,
+        media_photos: form.photos||[],
+        mediaPhotos: form.photos||[]
       } : e));
       setEditEx(null);
     } else {
       const newEx = { id:"e"+Date.now(), created_by: (await supabase.auth.getUser()).data.user.id,
         name: form.name, partie: form.partie, group_id: form.groupId,
-        equipment: form.equipment, description: form.desc, media_url: form.mediaUrl };
+        equipment: form.equipment, description: form.desc, media_url: form.mediaUrl, media_photos: form.photos||[] };
       await supabase.from('exercises').insert([newEx]);
-      setExercises(prev => [...prev, { ...newEx, groupId: form.groupId, desc: form.desc, mediaUrl: form.mediaUrl }]);
+      setExercises(prev => [...prev, { ...newEx, groupId: form.groupId, desc: form.desc, mediaUrl: form.mediaUrl, mediaPhotos: form.photos||[] }]);
       setAdding(false);
     }
     setForm(EMPTY_FORM);
@@ -824,7 +852,20 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
           <input value={form.equipment} onChange={e=>setForm(f=>({...f,equipment:e.target.value}))} placeholder="např. Osa / Stroj" style={inputStyle}/>
           <FieldLabel>Popis / technika</FieldLabel>
           <textarea value={form.desc} onChange={e=>setForm(f=>({...f,desc:e.target.value}))} rows={3} placeholder="Popis provedení cviku..." style={{ ...inputStyle, resize:"vertical" }}/>
-          <FieldLabel>Foto / Video URL</FieldLabel>
+          <FieldLabel>Fotografie cviku</FieldLabel>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
+            {(form.photos||[]).map((url,i)=>(
+              <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:8, overflow:"hidden", border:`1px solid ${T.borderDim}` }}>
+                <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, background:"rgba(0,0,0,0.6)", border:"none", borderRadius:5, color:"#fff", fontSize:11, cursor:"pointer", width:18, height:18, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>✕</button>
+              </div>
+            ))}
+            <label style={{ width:72, height:72, borderRadius:8, border:`1.5px dashed ${T.accent}55`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:T.accent, fontSize:22, flexShrink:0 }}>
+              {uploadingPhoto ? "…" : "+"}
+              <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} style={{ display:"none" }} disabled={uploadingPhoto}/>
+            </label>
+          </div>
+          <FieldLabel>Video URL (YouTube)</FieldLabel>
           <input value={form.mediaUrl} onChange={e=>setForm(f=>({...f,mediaUrl:e.target.value}))} placeholder="https://youtube.com/..." style={inputStyle}/>
           <div style={{ display:"flex", gap:8, marginTop:6 }}>
             {isEdit&&<Btn variant="danger" style={{ flex:1 }} onClick={()=>{ deleteExercise(editEx.id); setEditEx(null); setForm(EMPTY_FORM); }}>Smazat cvik</Btn>}
@@ -876,7 +917,7 @@ function ExercisesScreen({ exercises, setExercises, isTrainer, groups, setGroups
       <div style={{ paddingBottom:90 }}>
         <div style={{ padding:"18px 18px 0", display:"flex",justifyContent:"space-between",alignItems:"center" }}>
           <button onClick={()=>setSelected(null)} style={{ background:"none",border:"none",color:T.accent,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit" }}>← Zpět</button>
-          {isTrainer && <button onClick={()=>{ setEditEx(selected); setForm({name:selected.name,partie:selected.partie,groupId:selected.groupId||"",equipment:selected.equipment,desc:selected.desc,mediaUrl:selected.mediaUrl||""}); }} style={{ background:T.bgCard2,border:`1px solid ${T.borderDim}`,color:T.muted,borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>✏️ Upravit</button>}
+          {isTrainer && <button onClick={()=>{ setEditEx(selected); setForm({name:selected.name,partie:selected.partie,groupId:selected.groupId||"",equipment:selected.equipment,desc:selected.desc,mediaUrl:selected.mediaUrl||"",photos:selected.mediaPhotos||[]}); }} style={{ background:T.bgCard2,border:`1px solid ${T.borderDim}`,color:T.muted,borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>✏️ Upravit</button>}
         </div>
         <Card style={{ margin:"12px 18px" }}>
           <div style={{ background:T.bgCard2,padding:"18px",borderBottom:`3px solid ${p.color}`,borderRadius:"12px 12px 0 0" }}>
@@ -2395,7 +2436,7 @@ export default function App() {
         }
         const result = await window.storage?.get(STORAGE_KEY);
         const { data: exData2 } = await supabase.from('exercises').select('*');
-        setExercises((exData2 || []).map(e => ({ ...e, desc: e.description, mediaUrl: e.media_url, groupId: e.group_id })));
+        setExercises((exData2 || []).map(e => ({ ...e, desc: e.description, mediaUrl: e.media_url, groupId: e.group_id, mediaPhotos: e.media_photos || [] })));
         const { data: groupsData } = await supabase.from('groups').select('*');
         if (groupsData) setGroups(groupsData);
         const { data: plansData } = await supabase.from('plans').select('*');
@@ -2516,7 +2557,7 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'exercises' },
       async () => {
         const { data } = await supabase.from('exercises').select('*');
-        setExercises((data || []).map(e => ({ ...e, desc: e.description, mediaUrl: e.media_url, groupId: e.group_id })));
+        setExercises((data || []).map(e => ({ ...e, desc: e.description, mediaUrl: e.media_url, groupId: e.group_id, mediaPhotos: e.media_photos || [] })));
       }
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'plans' },
